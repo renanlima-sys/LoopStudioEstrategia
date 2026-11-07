@@ -8,22 +8,49 @@
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
+    html { background:#05070c; }
     body {
-      margin: 0; min-height: 100vh; color: #eef4ff;
-      background: radial-gradient(ellipse at 50% 12%, #12356a 0%, #0b1830 28%, #080b14 66%, #05070c 100%);
-      display: grid; place-items: center; padding: 28px 16px;
+      margin: 0; min-height: 100vh; color: #eef4ff; background: transparent;
+      display: grid; place-items: center; padding: 28px 16px; position: relative; overflow-x: hidden;
     }
-    .shell { width: min(100%, 680px); }
+    /* Fundo: gradientes radiais em movimento lento */
+    body::before, body::after { content:''; position:fixed; inset:-35%; z-index:-1; pointer-events:none; will-change:transform; }
+    body::before {
+      background:
+        radial-gradient(ellipse 45% 38% at 50% 32%, #12356a 0%, #0b1830 45%, transparent 75%),
+        radial-gradient(ellipse 60% 55% at 50% 50%, #0a1426 0%, #080b14 60%, #05070c 100%);
+      animation: drift-a 22s ease-in-out infinite alternate;
+    }
+    body::after {
+      background:
+        radial-gradient(circle at 28% 62%, rgba(40,118,232,.20) 0%, transparent 26%),
+        radial-gradient(circle at 74% 40%, rgba(88,70,220,.16) 0%, transparent 24%),
+        radial-gradient(circle at 60% 78%, rgba(30,160,200,.10) 0%, transparent 22%);
+      animation: drift-b 28s ease-in-out infinite alternate;
+    }
+    @keyframes drift-a {
+      0%   { transform: translate3d(-3%, -2%, 0) scale(1); }
+      50%  { transform: translate3d(3%, 2%, 0) scale(1.08); }
+      100% { transform: translate3d(-1%, 4%, 0) scale(1.03); }
+    }
+    @keyframes drift-b {
+      0%   { transform: translate3d(4%, 3%, 0) rotate(0deg); }
+      50%  { transform: translate3d(-5%, -2%, 0) rotate(8deg); }
+      100% { transform: translate3d(2%, -4%, 0) rotate(-6deg); }
+    }
+    @media (prefers-reduced-motion: reduce) { body::before, body::after { animation:none; } }
+
+    .shell { width: min(100%, 720px); }
     header { display:flex; align-items:center; justify-content:space-between; margin: 0 2px 24px; }
     .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.12em; font-size:.9rem; }
     .logo { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; color:#9ac5ff; background:linear-gradient(145deg,#193b69,#101c32); border:1px solid #31547f; }
     .online { color:#9be7c1; font-size:.75rem; border:1px solid #24543f; background:#10271f; border-radius:99px; padding:6px 10px; }
-    .panel { border:1px solid rgba(123,169,226,.22); background:linear-gradient(145deg,rgba(20,34,57,.88),rgba(10,16,29,.94)); box-shadow:0 28px 90px #0009, inset 0 1px #ffffff0b; border-radius:26px; padding:clamp(22px,5vw,42px); backdrop-filter:blur(18px); }
-    .intro { text-align:center; margin-bottom:30px; }
+    .panel { border:1px solid rgba(123,169,226,.22); background:linear-gradient(145deg,rgba(20,34,57,.86),rgba(10,16,29,.93)); box-shadow:0 28px 90px #0009, inset 0 1px #ffffff0b; border-radius:26px; padding:clamp(22px,5vw,42px); backdrop-filter:blur(18px); }
+    .intro { text-align:center; margin-bottom:26px; }
     h1 { margin:0 0 9px; font-size:clamp(2rem,6vw,3rem); letter-spacing:-.055em; }
     .subtitle { color:#9aabc4; margin:0; line-height:1.55; }
     .field-label { display:block; font-size:.86rem; font-weight:650; margin:0 0 10px; color:#d5e2f5; }
-    .input-wrap { display:flex; align-items:center; gap:10px; border:1px solid #2a405f; background:#091322; border-radius:14px; padding:0 15px; transition:border .2s,box-shadow .2s; }
+    .input-wrap { display:flex; align-items:center; gap:10px; border:1px solid #2a405f; background:#091322; border-radius:14px; padding:0 15px; transition:border .2s,box-shadow .2s; min-width:0; }
     .input-wrap:focus-within { border-color:#5597f4; box-shadow:0 0 0 4px #347ce51c; }
     .input-wrap span { color:#78adf5; font-size:1.1rem; }
     input[type=url], input[type=text] { width:100%; min-width:0; background:transparent; color:#eff6ff; border:0; outline:0; padding:17px 0; font:inherit; font-size:.94rem; }
@@ -34,6 +61,7 @@
     .primary { width:100%; margin-top:14px; padding:16px 18px; color:white; background:linear-gradient(110deg,#2876e8,#3c91ff); box-shadow:0 9px 25px #1765d744; }
     .secondary { padding:12px 16px; color:#c9ddfb; background:#172943; border:1px solid #2d4c72; }
     a.file-button { display:grid; place-items:center; text-decoration:none; text-align:center; }
+    .file-button.disabled { opacity:.45; pointer-events:none; }
     .hint { margin:10px 2px 0; color:#8193ad; font-size:.78rem; line-height:1.5; }
     .section { margin-top:24px; padding-top:23px; border-top:1px solid #ffffff12; animation:rise .35s ease both; }
     .section h2 { font-size:1rem; margin:0 0 7px; }
@@ -47,42 +75,71 @@
     .duration[aria-pressed="true"] { border-color:#5597f4; background:linear-gradient(145deg,#193b66,#10233d); box-shadow:0 0 0 2px #438df322; }
     .duration strong { display:block; font-size:1.25rem; }
     .duration small { display:block; color:#91a9c9; font-size:.7rem; margin-top:4px; }
-    .status { margin-top:17px; padding:13px 14px; border-radius:12px; background:#0a1525; color:#a9bad2; font-size:.83rem; line-height:1.5; }
+    .status { margin-top:14px; padding:12px 14px; border-radius:12px; background:#0a1525; color:#a9bad2; font-size:.82rem; line-height:1.5; }
     .status.error { color:#ffb4b4; background:#2a1215; border:1px solid #5a2a2f; }
     .status.ok { color:#9be7c1; background:#10271f; border:1px solid #24543f; }
-    .progress-track { height:7px; background:#1a2a40; border-radius:99px; overflow:hidden; margin-top:10px; }
-    .progress-bar { width:0%; height:100%; background:linear-gradient(90deg,#2876e8,#70b4ff); transition:width .2s; }
-    .actions { display:flex; gap:10px; margin-top:14px; }
+    .progress-track { height:7px; background:#1a2a40; border-radius:99px; overflow:hidden; margin-top:9px; }
+    .progress-bar { width:0%; height:100%; background:linear-gradient(90deg,#2876e8,#70b4ff); transition:width .3s; }
+    .progress-track.working .progress-bar { min-width:10%; background:repeating-linear-gradient(45deg,#2876e8 0 12px,#4d9bff 12px 24px); background-size:34px 34px; animation:stripes 1s linear infinite; }
+    @keyframes stripes { to { background-position:34px 0 } }
+    .actions { display:flex; gap:10px; margin-top:12px; }
     .actions > * { flex:1; margin-top:0 !important; }
     .notice { color:#8ea1bb; font-size:.76rem; line-height:1.55; margin-top:19px; }
     .hidden { display:none !important; }
     footer { text-align:center; color:#62748d; font-size:.72rem; margin-top:18px; }
 
-    /* Tela de preview */
-    #preview { animation:rise .35s ease both; }
-    .badge { display:inline-flex; align-items:center; gap:6px; font-size:.75rem; font-weight:700; padding:6px 11px; border-radius:99px; margin-bottom:14px; color:#9be7c1; border:1px solid #24543f; background:#10271f; }
-    #preview h1 { font-size:clamp(1.6rem,5vw,2.3rem); }
-    .player { width:100%; aspect-ratio:16/9; background:#000; border-radius:16px; border:1px solid #263c5a; display:block; }
-    .link-row { display:flex; gap:8px; align-items:center; margin-top:16px; }
-    .link-row .input-wrap { flex:1; min-width:0; }
-    .link-row input { padding:14px 0; font-size:.84rem; }
-    .copy-btn { padding:15px 18px; white-space:nowrap; color:white; background:linear-gradient(110deg,#2876e8,#3c91ff); }
-    .copy-btn.done { background:#1d6b4a; }
+    /* Abas: um vídeo / vários */
+    .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; background:#091322; border:1px solid #22385a; border-radius:15px; margin-bottom:22px; }
+    .tab { background:transparent; color:#9aabc4; padding:11px 10px; border-radius:11px; font-size:.88rem; }
+    .tab[aria-selected="true"] { background:linear-gradient(145deg,#1d4277,#14294a); color:#eef4ff; box-shadow:inset 0 0 0 1px #3b6aa8; }
 
-    .file-button.disabled { opacity:.45; pointer-events:none; }
-    .drive-frame { width:100%; aspect-ratio:16/9; border:1px solid #263c5a; border-radius:16px; background:#000; display:block; }
-    .placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #2d4c72; border-radius:16px; background:#0a1525; display:grid; place-items:center; text-align:center; color:#8ea1bb; font-size:.85rem; line-height:1.5; padding:20px; }
-    .placeholder strong { display:block; color:#d5e2f5; font-size:1rem; margin-bottom:6px; }
-    .step { color:#78adf5; font-weight:700; }
+    /* Lista de links (lote) */
+    .batch-list { display:grid; gap:10px; }
+    .batch-row { display:grid; grid-template-columns:28px 1fr 44px; gap:8px; align-items:center; animation:rise .25s ease both; }
+    .row-num { color:#71839d; font-size:.8rem; font-weight:700; text-align:center; }
+    .batch-row input { padding:14px 0; font-size:.88rem; }
+    .icon-btn { height:44px; width:44px; padding:0; color:#9aabc4; background:#0a1525; border:1px solid #263c5a; font-size:1.2rem; }
+    .row-status { grid-column:2 / 4; font-size:.76rem; color:#8193ad; margin:-3px 2px 2px; overflow-wrap:anywhere; }
+    .row-status.ok { color:#9be7c1; }
+    .row-status.err { color:#ffb4b4; }
+    .add-link { width:100%; margin-top:12px; padding:13px; background:transparent; color:#9ac5ff; border:1px dashed #36598a; }
+
+    /* Resultados */
+    .badge { display:inline-flex; align-items:center; gap:7px; font-size:.75rem; font-weight:700; padding:6px 11px; border-radius:99px; margin-bottom:14px; color:#9be7c1; border:1px solid #24543f; background:#10271f; }
     .badge.saving { color:#9ac5ff; border-color:#31547f; background:#132743; }
     .badge.fail { color:#ffb4b4; border-color:#5a2a2f; background:#2a1215; }
-    .spin { display:inline-block; width:10px; height:10px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+    .spin { display:inline-block; width:10px; height:10px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; vertical-align:-1px; }
     @keyframes spin { to { transform:rotate(360deg) } }
-    .progress-track.working .progress-bar { min-width:12%; background:repeating-linear-gradient(45deg,#2876e8 0 12px,#4d9bff 12px 24px); background-size:34px 34px; animation:stripes 1s linear infinite; }
-    @keyframes stripes { to { background-position:34px 0 } }
-    .caption { color:#8ea1bb; font-size:.76rem; line-height:1.5; margin:8px 2px 0; text-align:center; }
+    #results h1 { font-size:clamp(1.6rem,5vw,2.3rem); }
+    .summary-actions { display:flex; gap:10px; margin:0 0 16px; }
+    .summary-actions > * { flex:1; }
+    .jobs { display:grid; gap:14px; }
+    .job { border:1px solid #263c5a; background:#0a1525cc; border-radius:18px; padding:14px; animation:rise .3s ease both; }
+    .job-head { display:flex; align-items:center; gap:12px; }
+    .job-head .file-meta-text { min-width:0; flex:1; }
+    .pill { flex:none; font-size:.7rem; font-weight:700; padding:5px 9px; border-radius:99px; color:#9ac5ff; background:#132743; border:1px solid #31547f; }
+    .pill.done { color:#9be7c1; background:#10271f; border-color:#24543f; }
+    .pill.error { color:#ffb4b4; background:#2a1215; border-color:#5a2a2f; }
+    .pill.queued { color:#91a3bd; background:#0e1a2c; border-color:#263c5a; }
+    .job-preview { margin-top:12px; }
+    .player, .drive-frame { width:100%; aspect-ratio:16/9; background:#000; border-radius:14px; border:1px solid #263c5a; display:block; }
+    .placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #2d4c72; border-radius:14px; background:#08111f; display:grid; place-items:center; text-align:center; color:#8ea1bb; font-size:.84rem; line-height:1.5; padding:20px; }
+    .placeholder strong { display:block; color:#d5e2f5; font-size:.98rem; margin-bottom:6px; }
+    .caption { color:#8ea1bb; font-size:.75rem; line-height:1.5; margin:7px 2px 0; text-align:center; }
+    .caption.ok { color:#9be7c1; }
+    .link-row { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    .link-row .input-wrap { flex:1; }
+    .link-row input { padding:12px 0; font-size:.82rem; }
+    .copy-btn { padding:13px 16px; white-space:nowrap; color:white; background:linear-gradient(110deg,#2876e8,#3c91ff); }
+    .copy-btn.done { background:#1d6b4a; }
+    .actions .file-button, .actions button { padding:12px 10px; font-size:.86rem; }
+    .text-btn { background:none; border:0; color:#78adf5; font-size:.75rem; padding:4px; text-decoration:underline; }
+
     @keyframes rise { from {opacity:0;transform:translateY(9px)} to {opacity:1;transform:translateY(0)} }
-    @media(max-width:480px) { .panel{padding:23px 18px}.actions,.link-row{flex-direction:column;align-items:stretch}.durations{gap:7px}.duration{padding:14px 4px} }
+    @media(max-width:520px) {
+      .panel{padding:23px 16px} .actions,.link-row,.summary-actions{flex-direction:column;align-items:stretch}
+      .durations{gap:7px} .duration{padding:14px 4px} .batch-row{grid-template-columns:22px 1fr 44px}
+    }
   </style>
 </head>
 <body>
@@ -93,29 +150,45 @@
     </header>
 
     <section class="panel">
-      <!-- ETAPA 1: escolher vídeo e duração -->
+      <!-- ETAPA 1: escolher vídeo(s) e duração -->
       <div id="editor">
         <div class="intro">
           <h1>Seu vídeo. Seu tempo.</h1>
-          <p class="subtitle">Transforme um vídeo curto em um único arquivo de looping.</p>
+          <p class="subtitle">Transforme vídeos curtos em arquivos de looping.</p>
         </div>
 
-        <label class="field-label" for="driveUrl">Link do Google Drive <span style="color:#78adf5;font-weight:600">· mais rápido</span></label>
-        <div class="input-wrap">
-          <span>↗</span>
-          <input id="driveUrl" type="url" placeholder="Cole o link compartilhável do Drive" autocomplete="url">
+        <div class="tabs" role="tablist" aria-label="Quantidade de vídeos">
+          <button type="button" class="tab" role="tab" data-mode="single" aria-selected="true">Um vídeo</button>
+          <button type="button" class="tab" role="tab" data-mode="batch" aria-selected="false">Vários vídeos</button>
         </div>
-        <button id="loadDrive" class="primary" type="button">Usar vídeo do Drive</button>
-        <p class="hint">O vídeo não é baixado: o loop é montado direto no Google Drive. O arquivo precisa ser MP4 e estar compartilhado com “Qualquer pessoa com o link” (ou com a sua organização).</p>
 
-        <div style="text-align:center;margin:17px 0 0;color:#71839d;font-size:.78rem">ou</div>
-        <label id="localFileLabel" class="file-button secondary" for="localFile" style="display:block;text-align:center;margin-top:12px">Selecionar MP4 do computador</label>
-        <input id="localFile" class="hidden" type="file" accept="video/mp4,.mp4">
+        <!-- Um vídeo -->
+        <div id="singleMode">
+          <label class="field-label" for="driveUrl">Link do Google Drive <span style="color:#78adf5;font-weight:600">· mais rápido</span></label>
+          <div class="input-wrap">
+            <span>↗</span>
+            <input id="driveUrl" type="url" placeholder="Cole o link compartilhável do Drive" autocomplete="url">
+          </div>
+          <button id="loadDrive" class="primary" type="button">Usar vídeo do Drive</button>
+          <p class="hint">O vídeo não é baixado: o loop é montado direto no Google Drive. O arquivo precisa ser MP4 e estar compartilhado com “Qualquer pessoa com o link” (ou com a sua organização).</p>
+
+          <div style="text-align:center;margin:17px 0 0;color:#71839d;font-size:.78rem">ou</div>
+          <label id="localFileLabel" class="file-button secondary" for="localFile" style="display:block;text-align:center;margin-top:12px">Selecionar MP4 do computador</label>
+          <input id="localFile" class="hidden" type="file" accept="video/mp4,.mp4">
+        </div>
+
+        <!-- Vários vídeos -->
+        <div id="batchMode" class="hidden">
+          <label class="field-label">Links do Google Drive</label>
+          <div id="batchList" class="batch-list"></div>
+          <button id="addLink" class="add-link" type="button">+ Adicionar link</button>
+          <p class="hint">Dica: dá para colar vários links de uma vez (um por linha). Todos são processados ao mesmo tempo e salvos na pasta do Drive.</p>
+        </div>
 
         <section id="configuration" class="section hidden">
           <h2>Configuração do looping</h2>
-          <p class="muted">Escolha a duração total do arquivo final.</p>
-          <div class="file-meta">
+          <p class="muted" id="configHint">Escolha a duração total do arquivo final.</p>
+          <div id="singleMeta" class="file-meta">
             <div class="file-icon" id="sourceIcon">▣</div>
             <div style="min-width:0"><div id="fileName" class="file-name"></div><div id="fileSize" class="file-size"></div></div>
           </div>
@@ -125,46 +198,23 @@
             <button type="button" class="duration" data-minutes="15" aria-pressed="false"><strong>15:00</strong><small>15 minutos</small></button>
           </div>
           <button id="generate" class="primary" type="button">✦ Gerar vídeo</button>
-          <div id="status" class="status hidden" role="status" aria-live="polite">
-            <div id="statusText">Preparando...</div>
-            <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
-          </div>
+          <div id="status" class="status hidden" role="status" aria-live="polite"></div>
         </section>
       </div>
 
-      <!-- ETAPA 2: preview, salvar no Drive, copiar link e download -->
-      <div id="preview" class="hidden">
-        <div class="intro" style="margin-bottom:22px">
-          <span id="previewBadge" class="badge saving"><span class="spin"></span> Salvando no Drive</span>
-          <h1 id="previewTitle">Montando seu looping</h1>
-          <p class="subtitle" id="previewSubtitle">Confira o resultado abaixo.</p>
+      <!-- ETAPA 2: resultados -->
+      <div id="results" class="hidden">
+        <div class="intro" style="margin-bottom:20px">
+          <span id="resultsBadge" class="badge saving"><span class="spin"></span> Salvando no Drive</span>
+          <h1 id="resultsTitle">Montando seu looping</h1>
+          <p class="subtitle" id="resultsSubtitle"></p>
         </div>
-
-        <video id="previewVideo" class="player hidden" controls playsinline preload="metadata"></video>
-        <iframe id="previewFrame" class="drive-frame hidden" allow="autoplay" title="Preview no Google Drive"></iframe>
-        <p id="previewCaption" class="caption hidden"></p>
-
-        <div class="file-meta">
-          <div class="file-icon">▣</div>
-          <div style="min-width:0"><div id="outName" class="file-name"></div><div id="outInfo" class="file-size"></div></div>
+        <div id="summaryActions" class="summary-actions hidden">
+          <button id="copyAll" class="secondary" type="button" disabled>Copiar todos os links</button>
+          <a id="openFolder" class="file-button secondary" target="_blank" rel="noopener">Abrir pasta no Drive</a>
         </div>
-
-        <div id="uploadStatus" class="status" role="status" aria-live="polite">
-          <div id="uploadText">Salvando no Google Drive...</div>
-          <div id="uploadTrack" class="progress-track"><div id="uploadBar" class="progress-bar"></div></div>
-        </div>
-        <button id="retryUpload" class="secondary hidden" type="button" style="width:100%;margin-top:10px">↻ Tentar salvar novamente</button>
-
-        <div class="link-row">
-          <div class="input-wrap"><span>🔗</span><input id="driveLink" type="text" readonly placeholder="O link aparece aqui após salvar" aria-label="Link do arquivo no Google Drive"></div>
-          <button id="copyLink" class="copy-btn" type="button" disabled>Copiar link</button>
-        </div>
-
-        <div class="actions">
-          <a id="downloadLink" class="file-button primary disabled" download="loop-studio.mp4">⬇ Baixar MP4</a>
-          <a id="openDrive" class="file-button secondary hidden" target="_blank" rel="noopener">Abrir no Drive</a>
-        </div>
-        <button id="reset" class="secondary" type="button" style="width:100%;margin-top:10px">Novo vídeo</button>
+        <div id="jobs" class="jobs"></div>
+        <button id="reset" class="secondary" type="button" style="width:100%;margin-top:16px">Novo vídeo</button>
       </div>
 
       <p class="notice">O loop é montado sem recodificar: o vídeo final tem exatamente a mesma qualidade do original. Com link do Drive, nada é baixado para o computador; com arquivo do computador, o original é enviado uma única vez para o Drive.</p>
@@ -176,6 +226,9 @@
     // ===================== CONFIGURAÇÃO =====================
     // Cole aqui a URL do App da Web do Apps Script (termina em /exec).
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynZOe0lZXcKKHEmUNOdYvwJkYitJtEf4ADaEcc_VHsY-msB5gYLXQel9A-NtQ30M9B/exec';
+    const FOLDER_URL = 'https://drive.google.com/drive/folders/1h70-w-gdLnBnmF0oDHS0T7awpqt9IA-Y';
+    // Quantos vídeos são montados ao mesmo tempo no modo "Vários vídeos".
+    const PARALLEL = 4;
     // ========================================================
 
     // ================= MONTAGEM DO LOOP (sem recodificar) =================
@@ -502,46 +555,27 @@
     const READ_PIECE = 8 * 1024 * 1024;     // leitura do índice via Apps Script
     const DIRECT_CHUNK = 16 * 1024 * 1024;  // envio direto navegador → Drive
     const RELAY_CHUNK = 24 * 1024 * 1024;   // envio pelo Apps Script (quando o direto não é possível)
+    const POLL_MS = 10000;                  // consulta ao Drive sobre o preview
+    const POLL_MAX_MS = 30 * 60 * 1000;
 
-    let source = null;   // { kind: 'local', file, name, size } | { kind: 'drive', id, resourceKey, name, size }
-    let job = null;      // { plan, source, name, minutes, blob, url }
+    let mode = 'single';
+    let source = null;          // vídeo escolhido no modo "Um vídeo"
+    let rows = [];              // links do modo "Vários vídeos"
+    let jobs = [];
     let selectedMinutes = 5;
     let busy = false;
-    let saving = false;
+    let runId = 0;
 
     const formatMB = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    const clock = (ms) => { const t = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const scriptReady = () => APPS_SCRIPT_URL.startsWith('https://script.google.com/');
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-    const setStatus = (message, percent = 0, kind = '') => {
-      $('status').classList.remove('hidden', 'error', 'ok');
-      if (kind) $('status').classList.add(kind);
-      $('statusText').textContent = message;
-      $('progressBar').style.width = `${Math.max(0, Math.min(100, percent))}%`;
-    };
-
-    const setUpload = (message, percent = 0, kind = '') => {
-      const box = $('uploadStatus');
-      box.classList.remove('hidden', 'error', 'ok');
-      if (kind) box.classList.add(kind);
-      $('uploadText').innerHTML = message;
-      $('uploadTrack').classList.toggle('hidden', kind !== '');
-      $('uploadBar').style.width = `${Math.max(0, Math.min(100, percent))}%`;
-    };
-
-    function showScreen(name) {
-      $('editor').classList.toggle('hidden', name !== 'editor');
-      $('preview').classList.toggle('hidden', name !== 'preview');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function setBusy(value) {
-      busy = value;
-      $('generate').disabled = value;
-      $('loadDrive').disabled = value;
-      $('localFile').disabled = value;
-      $('localFileLabel').classList.toggle('disabled', value);
-      document.querySelectorAll('.duration').forEach(b => b.disabled = value);
+    function setStatus(html, kind = '') {
+      const el = $('status');
+      el.className = 'status' + (kind ? ' ' + kind : '');
+      el.innerHTML = html;
     }
 
     // ---------- Apps Script ----------
@@ -563,30 +597,19 @@
       }
     }
 
+    // Executa tarefas com limite de simultaneidade.
+    async function pool(items, limit, fn) {
+      let i = 0;
+      const worker = async () => { while (i < items.length) { const item = items[i++]; await fn(item); } };
+      await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    }
+
     const base64ToBytes = async (b64) => new Uint8Array(await (await fetch(`data:application/octet-stream;base64,${b64}`)).arrayBuffer());
     const blobToBase64 = (blob) => new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
       reader.onerror = () => reject(reader.error);
       reader.readAsDataURL(blob);
-    });
-
-    // ---------- Origem do vídeo ----------
-    function showSource(src) {
-      source = src;
-      $('fileName').textContent = src.name;
-      $('fileSize').textContent = `${formatMB(src.size)} · ${src.kind === 'drive' ? 'no Google Drive' : 'no computador'}`;
-      $('sourceIcon').textContent = src.kind === 'drive' ? '☁' : '▣';
-      $('configuration').classList.remove('hidden');
-      $('status').classList.add('hidden');
-      $('configuration').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    $('localFile').addEventListener('change', (event) => {
-      const file = event.target.files?.[0];
-      if (!file || busy) return;
-      if (file.type !== 'video/mp4' && !file.name.toLowerCase().endsWith('.mp4')) { alert('Selecione um arquivo MP4.'); return; }
-      showSource({ kind: 'local', file, name: file.name, size: file.size });
     });
 
     function parseDriveLink(value) {
@@ -601,6 +624,58 @@
       return null;
     }
 
+    async function driveInfo(link) {
+      const info = await callScript({ action: 'info', ...link });
+      if (info.mimeType !== 'video/mp4' && !/\.mp4$/i.test(info.name || '')) throw new Error('o vídeo precisa estar em MP4.');
+      return { kind: 'drive', ...link, name: info.name, size: info.size };
+    }
+
+    // ---------- Abas ----------
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+
+    function setMode(next) {
+      if (busy) return;
+      mode = next;
+      document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.mode === mode)));
+      $('singleMode').classList.toggle('hidden', mode !== 'single');
+      $('batchMode').classList.toggle('hidden', mode !== 'batch');
+      $('singleMeta').classList.toggle('hidden', mode !== 'single');
+      $('status').classList.add('hidden');
+      if (mode === 'batch' && !rows.length) { addRow(); addRow(); }
+      updateConfig();
+    }
+
+    function updateConfig() {
+      if (mode === 'single') {
+        $('configuration').classList.toggle('hidden', !source);
+        $('configHint').textContent = 'Escolha a duração total do arquivo final.';
+        $('generate').textContent = '✦ Gerar vídeo';
+      } else {
+        const count = rows.filter(r => r.input.value.trim()).length;
+        $('configuration').classList.remove('hidden');
+        $('configHint').textContent = 'A duração escolhida vale para todos os vídeos.';
+        $('generate').textContent = count > 1 ? `✦ Gerar ${count} vídeos` : '✦ Gerar vídeo';
+      }
+    }
+
+    // ---------- Um vídeo ----------
+    function showSource(src) {
+      source = src;
+      $('fileName').textContent = src.name;
+      $('fileSize').textContent = `${formatMB(src.size)} · ${src.kind === 'drive' ? 'no Google Drive' : 'no computador'}`;
+      $('sourceIcon').textContent = src.kind === 'drive' ? '☁' : '▣';
+      $('status').classList.add('hidden');
+      updateConfig();
+      $('configuration').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    $('localFile').addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if (!file || busy) return;
+      if (file.type !== 'video/mp4' && !file.name.toLowerCase().endsWith('.mp4')) { alert('Selecione um arquivo MP4.'); return; }
+      showSource({ kind: 'local', file, name: file.name, size: file.size });
+    });
+
     $('loadDrive').addEventListener('click', async () => {
       if (busy) return;
       const link = parseDriveLink($('driveUrl').value.trim());
@@ -608,18 +683,82 @@
       if (!scriptReady()) { alert('Falta configurar a URL do Apps Script no index.html.'); return; }
       $('loadDrive').disabled = true;
       $('loadDrive').textContent = 'Verificando o vídeo...';
-      try {
-        const info = await callScript({ action: 'info', ...link });
-        if (info.mimeType !== 'video/mp4' && !/\.mp4$/i.test(info.name || '')) throw new Error('o vídeo precisa estar em MP4.');
-        showSource({ kind: 'drive', ...link, name: info.name, size: info.size });
-      } catch (error) {
-        console.error(error);
-        alert(`Não foi possível usar este link: ${error?.message || error}`);
-      } finally {
-        $('loadDrive').disabled = busy;
-        $('loadDrive').textContent = 'Usar vídeo do Drive';
-      }
+      try { showSource(await driveInfo(link)); }
+      catch (error) { alert(`Não foi possível usar este link: ${error?.message || error}`); }
+      finally { $('loadDrive').disabled = busy; $('loadDrive').textContent = 'Usar vídeo do Drive'; }
     });
+
+    // ---------- Vários vídeos ----------
+    function addRow(value = '', after = null) {
+      const el = document.createElement('div');
+      el.className = 'batch-row';
+      el.innerHTML = `<span class="row-num"></span>
+        <div class="input-wrap"><span>↗</span><input type="url" placeholder="Cole o link do Drive" autocomplete="off"></div>
+        <button type="button" class="icon-btn" title="Remover link" aria-label="Remover link">×</button>
+        <div class="row-status"></div>`;
+      const row = { el, input: el.querySelector('input'), statusEl: el.querySelector('.row-status'), info: null, error: '', checking: false, checked: '', token: 0 };
+      row.input.value = value;
+      row.input.addEventListener('blur', () => validateRow(row));
+      row.input.addEventListener('input', () => { row.info = null; row.error = ''; row.checked = ''; renderRow(row); updateConfig(); });
+      row.input.addEventListener('paste', (e) => {
+        const text = e.clipboardData?.getData('text') || '';
+        const links = text.split(/[\s,;]+/).filter(t => /^https?:\/\//.test(t));
+        if (links.length < 2) return;
+        e.preventDefault();
+        row.input.value = links[0];
+        validateRow(row);
+        let anchor = row;
+        for (const l of links.slice(1)) { const r = addRow(l, anchor); validateRow(r); anchor = r; }
+        updateConfig();
+      });
+      el.querySelector('.icon-btn').addEventListener('click', () => removeRow(row));
+      if (after) { after.el.after(el); rows.splice(rows.indexOf(after) + 1, 0, row); }
+      else { $('batchList').appendChild(el); rows.push(row); }
+      renumber();
+      updateConfig();
+      return row;
+    }
+
+    function removeRow(row) {
+      if (busy) return;
+      row.el.remove();
+      rows = rows.filter(r => r !== row);
+      if (!rows.length) addRow();
+      renumber();
+      updateConfig();
+    }
+
+    function renumber() { rows.forEach((r, i) => r.el.querySelector('.row-num').textContent = i + 1); }
+
+    function renderRow(row) {
+      const s = row.statusEl;
+      s.className = 'row-status' + (row.info ? ' ok' : row.error ? ' err' : '');
+      s.innerHTML = row.checking ? '<span class="spin"></span> Verificando...' :
+        row.info ? `✓ ${esc(row.info.name)} · ${formatMB(row.info.size)}` :
+        row.error ? `✕ ${esc(row.error)}` : '';
+    }
+
+    async function validateRow(row) {
+      const value = row.input.value.trim();
+      if (!value) { row.info = null; row.error = ''; renderRow(row); return; }
+      if (row.checked === value && (row.info || row.error)) return;
+      const token = ++row.token;
+      row.checked = value; row.info = null; row.error = '';
+      const link = parseDriveLink(value);
+      if (!link) { row.error = 'Link do Google Drive inválido.'; renderRow(row); return; }
+      if (!scriptReady()) { row.error = 'Falta configurar a URL do Apps Script.'; renderRow(row); return; }
+      row.checking = true; renderRow(row);
+      try {
+        const info = await driveInfo(link);
+        if (token === row.token) row.info = info;
+      } catch (err) {
+        if (token === row.token) row.error = String(err?.message || err);
+      } finally {
+        if (token === row.token) { row.checking = false; renderRow(row); }
+      }
+    }
+
+    $('addLink').addEventListener('click', () => { const r = addRow(); r.input.focus(); });
 
     document.querySelectorAll('.duration').forEach(button => {
       button.addEventListener('click', () => {
@@ -629,7 +768,248 @@
       });
     });
 
-    // Lê um trecho do vídeo de origem (só o índice é lido, alguns KB/MB).
+    function setBusy(value) {
+      busy = value;
+      $('generate').disabled = value;
+      $('loadDrive').disabled = value;
+      $('localFile').disabled = value;
+      $('addLink').disabled = value;
+      $('localFileLabel').classList.toggle('disabled', value);
+      document.querySelectorAll('.duration, .tab, .icon-btn').forEach(b => b.disabled = value);
+    }
+
+    // ---------- Gerar ----------
+    $('generate').addEventListener('click', async () => {
+      if (busy) return;
+      let sources = [];
+      if (mode === 'single') {
+        if (!source) return;
+        sources = [source];
+      } else {
+        const filled = rows.filter(r => r.input.value.trim());
+        if (!filled.length) { setStatus('Adicione pelo menos um link do Drive.', 'error'); return; }
+        setBusy(true);
+        setStatus('<span class="spin"></span> Verificando os links...');
+        await pool(filled, 6, validateRow);
+        setBusy(false);
+        const bad = filled.filter(r => !r.info);
+        if (bad.length) {
+          setStatus(`${bad.length === 1 ? '1 link está' : bad.length + ' links estão'} com problema (marcados com ✕). Corrija ou remova para continuar.`, 'error');
+          return;
+        }
+        sources = filled.map(r => r.info);
+      }
+      $('status').classList.add('hidden');
+      startJobs(sources);
+    });
+
+    function buildOutputName(src, minutes, used) {
+      const base = (src.name || 'video').replace(/\.mp4$/i, '').replace(/[^\w\-À-ÿ]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'video';
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      let name = `${base}-loop-${minutes}min-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+      let unique = name, k = 2;
+      while (used.has(unique)) unique = `${name}-${k++}`;
+      used.add(unique);
+      return unique + '.mp4';
+    }
+
+    function startJobs(sources) {
+      clearJobs();
+      const myRun = ++runId;
+      const used = new Set();
+      jobs = sources.map((src, i) => ({
+        idx: i, source: src, minutes: selectedMinutes, name: buildOutputName(src, selectedMinutes, used),
+        state: 'queued', text: 'Na fila', pct: 0, t0: 0, tEnd: 0, plan: null, url: null, result: null,
+        preview: 'none', durationMs: 0, open: sources.length === 1, run: myRun
+      }));
+      $('jobs').innerHTML = '';
+      jobs.forEach(job => { job.el = buildJobCard(job); $('jobs').appendChild(job.el.root); renderJob(job); });
+      $('summaryActions').classList.toggle('hidden', jobs.length < 2);
+      $('openFolder').href = FOLDER_URL;
+      showScreen('results');
+      renderSummary();
+      startTicker();
+      pool(jobs, PARALLEL, runJob).then(() => renderSummary());
+    }
+
+    function clearJobs() {
+      for (const job of jobs) if (job.url) URL.revokeObjectURL(job.url);
+      jobs = [];
+      $('jobs').innerHTML = '';
+    }
+
+    function showScreen(name) {
+      $('editor').classList.toggle('hidden', name !== 'editor');
+      $('results').classList.toggle('hidden', name !== 'results');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ---------- Cartão de cada vídeo ----------
+    function buildJobCard(job) {
+      const root = document.createElement('div');
+      root.className = 'job';
+      root.innerHTML = `
+        <div class="job-head">
+          <div class="file-icon">▣</div>
+          <div class="file-meta-text"><div class="file-name"></div><div class="file-size"></div></div>
+          <span class="pill queued">Na fila</span>
+        </div>
+        <div class="job-preview"></div>
+        <p class="caption hidden"></p>
+        <div class="status"><div class="st-text"></div><div class="progress-track"><div class="progress-bar"></div></div></div>
+        <div class="link-row hidden">
+          <div class="input-wrap"><span>🔗</span><input type="text" readonly aria-label="Link do arquivo no Google Drive"></div>
+          <button type="button" class="copy-btn">Copiar link</button>
+        </div>
+        <div class="actions">
+          <a class="file-button primary dl disabled" download>⬇ Baixar MP4</a>
+          <a class="file-button secondary open hidden" target="_blank" rel="noopener">Abrir no Drive</a>
+          <button type="button" class="secondary toggle hidden">▶ Ver preview</button>
+          <button type="button" class="secondary again hidden">↻ Tentar de novo</button>
+        </div>`;
+      const q = (s) => root.querySelector(s);
+      const el = { root, name: q('.file-name'), info: q('.file-size'), pill: q('.pill'), preview: q('.job-preview'), caption: q('.caption'),
+        status: q('.status'), stText: q('.st-text'), track: q('.progress-track'), bar: q('.progress-bar'),
+        linkRow: q('.link-row'), link: q('.link-row input'), copy: q('.copy-btn'), dl: q('.dl'), open: q('.open'), toggle: q('.toggle'), again: q('.again') };
+      el.copy.addEventListener('click', () => copyText(job.result?.link || '', el.copy, 'Copiar link'));
+      el.toggle.addEventListener('click', () => { job.open = !job.open; job.previewKey = ''; renderJob(job); });
+      el.again.addEventListener('click', () => { job.state = 'queued'; job.text = 'Na fila'; renderJob(job); renderSummary(); startTicker(); runJob(job).then(renderSummary); });
+      return el;
+    }
+
+    function renderJob(job) {
+      const el = job.el;
+      if (!el) return;
+      el.name.textContent = job.name;
+      const total = job.plan ? ` · ${formatMB(job.plan.total)} · volta de ${job.plan.loopSec.toFixed(1)} s` : ` · origem ${formatMB(job.source.size)}`;
+      el.info.textContent = `${String(job.minutes).padStart(2, '0')}:00${total}`;
+
+      const pills = { queued: ['queued', 'Na fila'], preparing: ['', 'Preparando'], saving: ['', 'Salvando'], done: ['done', '✓ Pronto'], error: ['error', '✕ Erro'] };
+      const [cls, label] = pills[job.state];
+      el.pill.className = 'pill' + (cls ? ' ' + cls : '');
+      el.pill.textContent = label;
+
+      // Status e progresso
+      const active = job.state === 'preparing' || job.state === 'saving';
+      el.status.className = 'status' + (job.state === 'done' ? ' ok' : job.state === 'error' ? ' error' : '');
+      const elapsed = job.t0 ? ` <span style="color:#71839d">· ${clock((job.tEnd || Date.now()) - job.t0)}</span>` : '';
+      el.stText.innerHTML = job.state === 'done' ? `✓ Salvo no Google Drive em ${clock(job.tEnd - job.t0)}.` : `${job.text}${active ? elapsed : ''}`;
+      el.track.classList.toggle('hidden', !active && job.state !== 'queued');
+      el.track.classList.toggle('working', active && job.pct < 1);
+      el.bar.style.width = `${job.pct}%`;
+
+      // Link, download e Drive
+      const saved = job.state === 'done' && job.result;
+      el.linkRow.classList.toggle('hidden', !saved);
+      if (saved) el.link.value = job.result.link;
+      el.open.classList.toggle('hidden', !saved);
+      if (saved) el.open.href = job.result.link;
+      const dlHref = job.url || (saved ? `https://drive.google.com/uc?export=download&id=${job.result.id}` : '');
+      el.dl.classList.toggle('disabled', !dlHref);
+      if (dlHref) { el.dl.href = dlHref; el.dl.download = job.name; if (job.url) el.dl.removeAttribute('target'); else el.dl.target = '_blank'; }
+      el.again.classList.toggle('hidden', job.state !== 'error');
+
+      renderPreview(job);
+    }
+
+    function renderPreview(job) {
+      const el = job.el;
+      const batch = jobs.length > 1;
+      el.toggle.classList.toggle('hidden', !batch || job.state === 'queued');
+      el.toggle.textContent = job.open ? '▲ Ocultar preview' : '▶ Ver preview';
+      const show = job.open && job.state !== 'queued';
+      // Decide o que mostrar: o arquivo entregue (local ou no Drive) ou um aviso.
+      let kind, caption = '', capOk = false;
+      if (job.url) {
+        kind = 'video';
+        caption = job.state === 'done' ? 'Este é exatamente o arquivo entregue na pasta do Drive.' : 'Este é o arquivo que está sendo salvo no Drive.';
+        capOk = job.state === 'done';
+      } else if (job.state === 'done' && job.preview === 'ready') {
+        kind = 'frame';
+        caption = `Arquivo entregue na pasta · duração confirmada pelo Drive: ${clock(job.durationMs)}`;
+        capOk = true;
+      } else if (job.state === 'done' && job.preview === 'timeout') {
+        kind = 'msg';
+        caption = '';
+      } else if (job.state === 'done') {
+        kind = 'wait';
+      } else kind = 'pending';
+
+      const key = `${show}|${kind}`;
+      if (job.previewKey !== key) {
+        job.previewKey = key;
+        el.preview.innerHTML = '';
+        if (show) {
+          if (kind === 'video') {
+            const v = document.createElement('video');
+            v.className = 'player'; v.controls = true; v.playsInline = true; v.preload = 'metadata'; v.src = job.url;
+            el.preview.appendChild(v);
+          } else if (kind === 'frame') {
+            const f = document.createElement('iframe');
+            f.className = 'drive-frame'; f.allow = 'autoplay'; f.title = 'Preview do arquivo entregue';
+            f.src = `https://drive.google.com/file/d/${job.result.id}/preview`;
+            el.preview.appendChild(f);
+          } else {
+            const msgs = {
+              pending: ['O preview aparece aqui', 'Assim que o arquivo for salvo no Drive, o preview mostra exatamente o que foi entregue na pasta.'],
+              wait: ['<span class="spin"></span> O Drive está preparando a reprodução', 'Todo vídeo novo no Drive passa por um processamento antes de poder ser reproduzido (costuma levar alguns minutos). O preview do arquivo entregue aparece aqui sozinho. O download já funciona.'],
+              msg: ['O Drive ainda não liberou a reprodução', 'O arquivo já está salvo na pasta e pode ser baixado. Abra no Drive daqui a alguns minutos para assistir.']
+            }[kind];
+            el.preview.innerHTML = `<div class="placeholder"><div><strong>${msgs[0]}</strong>${msgs[1]}</div></div>`;
+          }
+        }
+      }
+      el.caption.classList.toggle('hidden', !show || !caption);
+      el.caption.className = 'caption' + (capOk ? ' ok' : '') + (!show || !caption ? ' hidden' : '');
+      el.caption.textContent = caption;
+    }
+
+    // Atualiza cronômetros a cada segundo.
+    let ticker = null;
+    function startTicker() {
+      if (ticker) clearInterval(ticker);
+      ticker = setInterval(() => {
+        let any = false;
+        for (const job of jobs) if (job.state === 'preparing' || job.state === 'saving') { any = true; renderJob(job); }
+        renderSummary();
+        if (!any && !jobs.some(j => j.state === 'queued')) { clearInterval(ticker); ticker = null; }
+      }, 1000);
+    }
+
+    function renderSummary() {
+      const n = jobs.length;
+      if (!n) return;
+      const done = jobs.filter(j => j.state === 'done').length;
+      const failed = jobs.filter(j => j.state === 'error').length;
+      const active = n - done - failed;
+      const badge = $('resultsBadge');
+      const firstStart = Math.min(...jobs.filter(j => j.t0).map(j => j.t0), Date.now());
+      const lastEnd = Math.max(...jobs.map(j => j.tEnd || 0));
+      if (active) {
+        badge.className = 'badge saving';
+        badge.innerHTML = '<span class="spin"></span> Salvando no Drive';
+        $('resultsTitle').textContent = n === 1 ? 'Montando seu looping' : `Montando ${n} loopings`;
+        $('resultsSubtitle').textContent = n === 1
+          ? (jobs[0].url ? 'Você já pode conferir e baixar. Enquanto isso, o arquivo é salvo no Drive.' : 'O arquivo está sendo montado direto no Google Drive.')
+          : `${done} de ${n} prontos · ${Math.min(PARALLEL, active)} em andamento ao mesmo tempo · ${clock(Date.now() - firstStart)}`;
+      } else if (failed) {
+        badge.className = 'badge fail';
+        badge.textContent = failed === n ? '✕ Não foi salvo no Drive' : `✕ ${failed} com erro`;
+        $('resultsTitle').textContent = n === 1 ? 'Não foi possível salvar' : `${done} de ${n} loopings prontos`;
+        $('resultsSubtitle').textContent = 'Use “Tentar de novo” no vídeo com erro.';
+      } else {
+        badge.className = 'badge';
+        badge.textContent = '✓ Pronto';
+        $('resultsTitle').textContent = n === 1 ? 'Seu looping está pronto' : `${n} loopings prontos`;
+        $('resultsSubtitle').textContent = n === 1 ? 'Arquivo salvo na pasta do Google Drive.' : `Todos salvos na pasta do Google Drive em ${clock(lastEnd - firstStart)}.`;
+      }
+      $('copyAll').disabled = !done;
+      $('reset').disabled = !!active;
+      $('reset').textContent = n > 1 ? 'Novos vídeos' : 'Novo vídeo';
+    }
+
+    // ---------- Processamento de um vídeo ----------
     function rangeReader(src) {
       if (src.kind === 'local') return async (pos, len) => new Uint8Array(await src.file.slice(pos, pos + len).arrayBuffer());
       return async (pos, len) => {
@@ -646,105 +1026,116 @@
       };
     }
 
-    function buildOutputName(src, minutes) {
-      const base = (src.name || 'video').replace(/\.mp4$/i, '').replace(/[^\w\-À-ÿ]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'video';
-      const d = new Date();
-      const p = (n) => String(n).padStart(2, '0');
-      return `${base}-loop-${minutes}min-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.mp4`;
+    function update(job, text, pct) {
+      job.text = text;
+      if (pct !== undefined) job.pct = Math.max(0, Math.min(100, pct));
+      renderJob(job);
     }
 
-    // ---------- Gerar ----------
-    $('generate').addEventListener('click', async () => {
-      if (!source || busy) return;
-      setBusy(true);
-      clearJob();
+    async function runJob(job) {
+      const alive = () => job.run === runId;
+      job.t0 = Date.now(); job.tEnd = 0; job.pct = 0; job.error = null;
+      let tempId = null;
       try {
-        setStatus('Lendo o índice do vídeo...', 25);
-        const index = await readMp4Index(rangeReader(source), source.size);
-        setStatus('Montando o loop...', 80);
-        const minutes = selectedMinutes;
-        const plan = buildLoopPlan(index.moov, index.ftyp, minutes * 60);
-        job = { plan, source, minutes, name: buildOutputName(source, minutes) };
-
-        if (source.kind === 'local') {
-          // Arquivo final montado na hora a partir de pedaços do original (sem copiar memória).
-          const body = source.file.slice(plan.a, plan.a + plan.P);
-          const parts = [plan.header];
-          for (let k = 0; k < plan.n; k++) parts.push(body);
-          if (plan.Q) parts.push(source.file.slice(plan.a, plan.a + plan.Q));
-          job.blob = new Blob(parts, { type: 'video/mp4' });
-          job.url = URL.createObjectURL(job.blob);
+        if (!scriptReady()) throw new Error('falta a URL do Apps Script no index.html.');
+        if (!job.plan) {
+          job.state = 'preparing';
+          update(job, 'Lendo o índice do vídeo...', 0);
+          const index = await readMp4Index(rangeReader(job.source), job.source.size);
+          job.plan = buildLoopPlan(index.moov, index.ftyp, job.minutes * 60);
+          if (job.source.kind === 'local') {
+            // Arquivo final montado na hora a partir de pedaços do original (sem copiar memória).
+            const f = job.source.file, plan = job.plan;
+            const body = f.slice(plan.a, plan.a + plan.P);
+            const parts = [plan.header];
+            for (let k = 0; k < plan.n; k++) parts.push(body);
+            if (plan.Q) parts.push(f.slice(plan.a, plan.a + plan.Q));
+            job.url = URL.createObjectURL(new Blob(parts, { type: 'video/mp4' }));
+          }
         }
-        setStatus('Loop montado!', 100, 'ok');
-        openPreview();
-        saveToDrive();
+        if (!alive()) return;
+        job.state = 'saving';
+        update(job, 'Preparando para salvar no Drive...', 0);
+
+        const local = job.source.kind === 'local';
+        let src = local ? null : { id: job.source.id, resourceKey: job.source.resourceKey };
+        if (local) {
+          // O original é enviado uma única vez; as repetições são feitas no próprio Drive.
+          const up = await uploadBlob(job.source.file, `${TMP_PREFIX}${Date.now()}-${job.idx}.mp4`, (done, total) =>
+            update(job, `Etapa 1 de 2 · Enviando o vídeo original... ${Math.round(done / total * 100)}% (${formatMB(done)} de ${formatMB(total)})`, done / total * 100));
+          tempId = up.id;
+          src = { id: up.id, resourceKey: '' };
+        }
+        const prefix = local ? 'Etapa 2 de 2 · ' : '';
+        job.result = await pumpToDrive(job, src, (pos, total, eta) =>
+          update(job, `${prefix}Montando o arquivo no Drive... ${Math.round(pos / total * 100)}% (${formatMB(pos)} de ${formatMB(total)}${eta ? ` · ~${eta < 60 ? eta + ' s' : Math.ceil(eta / 60) + ' min'} restantes` : ''})`, pos / total * 100));
+        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
+        tempId = null;
+        job.tEnd = Date.now();
+        job.state = 'done';
+        job.pct = 100;
+        renderJob(job);
+        renderSummary();
+        if (!local) watchProcessing(job);
       } catch (error) {
         console.error(error);
-        setStatus(`Não foi possível gerar o vídeo: ${error?.message || error}`, 0, 'error');
-      } finally {
-        setBusy(false);
+        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
+        job.tEnd = Date.now();
+        job.state = 'error';
+        job.error = error;
+        update(job, `Não foi possível salvar no Drive: ${esc(error?.message || error)}${job.url ? ' Você ainda pode baixar o MP4.' : ''}`, 0);
+        renderSummary();
       }
-    });
-
-    function clearJob() {
-      if (job?.url) URL.revokeObjectURL(job.url);
-      job = null;
-      $('previewVideo').removeAttribute('src');
-      $('previewVideo').load();
-      $('previewFrame').removeAttribute('src');
     }
 
-    // ---------- Preview ----------
-    function setHeader(state) {
-      const badge = $('previewBadge');
-      badge.className = 'badge' + (state === 'saving' ? ' saving' : state === 'fail' ? ' fail' : '');
-      badge.innerHTML = state === 'saving' ? '<span class="spin"></span> Salvando no Drive' : state === 'fail' ? '✕ Não foi salvo no Drive' : '✓ Pronto';
-      $('previewTitle').textContent = state === 'done' ? 'Seu looping está pronto' : state === 'fail' ? 'Seu looping foi montado' : 'Montando seu looping';
-    }
-
-    // Cronômetro: atualiza a cada segundo mesmo entre as respostas do Drive.
-    let timer = null, timerStart = 0, timerText = '', timerPct = 0;
-    const clock = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
-    function startTimer() {
-      stopTimer();
-      timerStart = Date.now();
-      $('uploadTrack').classList.add('working');
-      timer = setInterval(renderTimer, 1000);
-    }
-    function stopTimer() { if (timer) clearInterval(timer); timer = null; $('uploadTrack').classList.remove('working'); }
-    function progress(text, pct) { timerText = text; timerPct = pct; renderTimer(); }
-    function renderTimer() {
-      setUpload(`${timerText} <span style="color:#71839d">· ${clock(Date.now() - timerStart)}</span>`, timerPct);
-      $('uploadTrack').classList.toggle('working', timerPct < 1);
-    }
-
-    function openPreview() {
-      const local = !!job.url;
-      $('previewVideo').classList.toggle('hidden', !local);
-      $('previewFrame').classList.toggle('hidden', local);
-      $('previewCaption').classList.toggle('hidden', local);
-      if (local) $('previewVideo').src = job.url;
-      else {
-        // O arquivo final ainda não existe (e o Drive leva alguns minutos para processar vídeos novos).
-        // Mostramos o vídeo original, que já está processado: é exatamente o trecho que se repete.
-        $('previewFrame').src = `https://drive.google.com/file/d/${job.source.id}/preview`;
-        $('previewCaption').textContent = `Prévia da volta de ${job.plan.loopSec.toFixed(1)} s que se repete até ${String(job.minutes).padStart(2, '0')}:00 no arquivo final.`;
+    async function pumpToDrive(job, src, onProgress) {
+      const plan = job.plan;
+      const p = { H: plan.header.length, a: plan.a, P: plan.P, n: plan.n, Q: plan.Q, total: plan.total };
+      const { uploadUrl } = await retry(() => callScript({ action: 'start', name: job.name, size: plan.total }));
+      const headerB64 = await blobToBase64(new Blob([plan.header]));
+      const t0 = Date.now();
+      let pos = 0, fails = 0;
+      onProgress(0, p.total, 0);
+      while (true) {
+        let r;
+        try {
+          r = await callScript({ action: 'pump', uploadUrl, ...src, plan: p, pos, header: pos < p.H ? headerB64 : undefined });
+        } catch (err) {
+          // Se uma chamada cair no meio, pergunta ao Drive até onde chegou e continua de lá.
+          await sleep(2000);
+          const s = await retry(() => callScript({ action: 'status', uploadUrl, total: p.total }));
+          if (s.done) return s;
+          if (s.next <= pos && ++fails >= 3) throw err;
+          pos = s.next;
+          continue;
+        }
+        if (r.done) return r;
+        pos = r.pos;
+        const speed = pos / Math.max(1, (Date.now() - t0) / 1000);
+        onProgress(pos, p.total, speed > 0 ? Math.round((p.total - pos) / speed) : 0);
       }
-      setHeader('saving');
+    }
 
-      $('outName').textContent = job.name;
-      $('outInfo').textContent = `${String(job.minutes).padStart(2, '0')}:00 · ${formatMB(job.plan.total)} · volta de ${job.plan.loopSec.toFixed(1)} s`;
-      const dl = $('downloadLink');
-      if (local) { dl.href = job.url; dl.download = job.name; dl.removeAttribute('target'); dl.classList.remove('disabled'); }
-      else { dl.removeAttribute('href'); dl.classList.add('disabled'); }
-      $('driveLink').value = '';
-      $('copyLink').disabled = true;
-      $('copyLink').textContent = 'Copiar link';
-      $('copyLink').classList.remove('done');
-      $('openDrive').classList.add('hidden');
-      $('retryUpload').classList.add('hidden');
-      $('previewSubtitle').textContent = local ? 'Você já pode conferir e baixar. Enquanto isso, o arquivo é salvo no Drive.' : 'O arquivo está sendo montado direto no Google Drive. Isso leva alguns minutos.';
-      showScreen('preview');
+    // O Drive avisa (videoMediaMetadata) quando termina de processar o vídeo e libera a reprodução.
+    async function watchProcessing(job) {
+      const t0 = Date.now();
+      job.preview = 'wait';
+      renderJob(job);
+      while (job.run === runId && Date.now() - t0 < POLL_MAX_MS) {
+        await sleep(POLL_MS);
+        if (job.run !== runId) return;
+        try {
+          const m = await callScript({ action: 'meta', id: job.result.id });
+          if (m.ready) {
+            job.preview = 'ready';
+            job.durationMs = m.durationMs;
+            if (jobs.length > 1 && !jobs.some(j => j.open)) job.open = true;
+            renderJob(job);
+            return;
+          }
+        } catch (err) { console.warn(err); }
+      }
+      if (job.run === runId) { job.preview = 'timeout'; renderJob(job); }
     }
 
     // ---------- Envio do arquivo do computador para o Drive ----------
@@ -791,124 +1182,46 @@
       throw new Error('o Drive não confirmou o fim do envio.');
     }
 
-    // ---------- Salvar no Drive ----------
-    async function saveToDrive() {
-      if (!job || saving) return;
-      if (!scriptReady()) {
-        setUpload('Salvamento no Drive não configurado (falta a URL do Apps Script).' + (job.url ? ' Use “Baixar MP4”.' : ''), 0, 'error');
-        return;
-      }
-      const current = job;
-      saving = true;
-      $('retryUpload').classList.add('hidden');
-      $('reset').disabled = true;
-      let tempId = null;
-      startTimer();
-      progress('Preparando para salvar no Drive...', 0);
-      try {
-        const local = current.source.kind === 'local';
-        let src = local ? null : { id: current.source.id, resourceKey: current.source.resourceKey };
-
-        if (local) {
-          // O original é enviado uma única vez; as repetições são feitas no próprio Drive.
-          const up = await uploadBlob(current.source.file, `${TMP_PREFIX}${Date.now()}.mp4`, (done, total) =>
-            progress(`<span class="step">Etapa 1 de 2</span> · Enviando o vídeo original... ${Math.round(done / total * 100)}% (${formatMB(done)} de ${formatMB(total)})`, done / total * 100));
-          tempId = up.id;
-          src = { id: up.id, resourceKey: '' };
-        }
-
-        const prefix = local ? '<span class="step">Etapa 2 de 2</span> · ' : '';
-        const plan = current.plan;
-        const p = { H: plan.header.length, a: plan.a, P: plan.P, n: plan.n, Q: plan.Q, total: plan.total };
-        progress(`${prefix}Montando o arquivo no Drive... 0%`, 0);
-        const { uploadUrl } = await callScript({ action: 'start', name: current.name, size: plan.total });
-        const headerB64 = await blobToBase64(new Blob([plan.header]));
-        const t0 = Date.now();
-        let pos = 0, result = null;
-        while (!result) {
-          let r;
-          try {
-            r = await callScript({ action: 'pump', uploadUrl, ...src, plan: p, pos, header: pos < p.H ? headerB64 : undefined });
-          } catch (err) {
-            // Se uma chamada cair no meio, pergunta ao Drive até onde chegou e continua de lá.
-            await sleep(2000);
-            const s = await retry(() => callScript({ action: 'status', uploadUrl, total: p.total }));
-            if (s.done) { result = s; break; }
-            if (s.next <= pos) { if ((current.fails = (current.fails || 0) + 1) >= 3) throw err; }
-            pos = s.next;
-            continue;
-          }
-          if (r.done) { result = r; break; }
-          pos = r.pos;
-          const pct = pos / p.total * 100;
-          const speed = pos / Math.max(1, (Date.now() - t0) / 1000);
-          const eta = speed > 0 ? Math.round((p.total - pos) / speed) : 0;
-          progress(`${prefix}Montando o arquivo no Drive... ${Math.round(pct)}% (${formatMB(pos)} de ${formatMB(p.total)}${eta ? ` · ~${eta < 60 ? eta + ' s' : Math.ceil(eta / 60) + ' min'} restantes` : ''})`, pct);
-        }
-
-        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
-        stopTimer();
-        if (current !== job) return;
-        showSaved(result, Date.now() - timerStart);
-      } catch (error) {
-        console.error(error);
-        stopTimer();
-        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
-        if (current !== job) return;
-        setHeader('fail');
-        setUpload(`Não foi possível salvar no Drive: ${error?.message || error}${current.url ? ' Você ainda pode baixar o MP4.' : ''}`, 0, 'error');
-        $('retryUpload').classList.remove('hidden');
-      } finally {
-        saving = false;
-        $('reset').disabled = false;
-      }
-    }
-
-    function showSaved(result, elapsed) {
-      setHeader('done');
-      $('driveLink').value = result.link;
-      $('copyLink').disabled = false;
-      $('openDrive').href = result.link;
-      $('openDrive').classList.remove('hidden');
-      $('previewSubtitle').textContent = 'Arquivo salvo na pasta do Google Drive.';
-      setUpload(`✓ Salvo no Google Drive em ${clock(elapsed)}.`, 100, 'ok');
-      if (!job.url) {
-        // O Drive leva alguns minutos para liberar a reprodução de vídeos novos; o download já funciona.
-        $('previewCaption').textContent = `Prévia da volta de ${job.plan.loopSec.toFixed(1)} s que se repete no arquivo final. A reprodução do arquivo final no Drive é liberada em alguns minutos (o Drive processa vídeos novos); o download já funciona.`;
-        const dl = $('downloadLink');
-        dl.href = `https://drive.google.com/uc?export=download&id=${result.id}`;
-        dl.target = '_blank';
-        dl.classList.remove('disabled');
-      }
-    }
-
-    $('retryUpload').addEventListener('click', saveToDrive);
-
-    // ---------- Copiar link ----------
-    $('copyLink').addEventListener('click', async () => {
-      const link = $('driveLink').value;
-      if (!link) return;
+    // ---------- Copiar ----------
+    async function copyText(text, button, label) {
+      if (!text) return;
       let copied = false;
-      try { await navigator.clipboard.writeText(link); copied = true; }
-      catch { $('driveLink').select(); try { copied = document.execCommand('copy'); } catch {} }
-      $('copyLink').textContent = copied ? '✓ Copiado' : 'Selecione e copie';
-      $('copyLink').classList.toggle('done', copied);
-      setTimeout(() => { $('copyLink').textContent = 'Copiar link'; $('copyLink').classList.remove('done'); }, 2200);
+      try { await navigator.clipboard.writeText(text); copied = true; }
+      catch {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { copied = document.execCommand('copy'); } catch {}
+        ta.remove();
+      }
+      button.textContent = copied ? '✓ Copiado' : 'Não foi possível copiar';
+      button.classList.toggle('done', copied);
+      setTimeout(() => { button.textContent = label; button.classList.remove('done'); }, 2200);
+    }
+
+    $('copyAll').addEventListener('click', () => {
+      const text = jobs.filter(j => j.state === 'done').map(j => `${j.name}\n${j.result.link}`).join('\n\n');
+      copyText(text, $('copyAll'), 'Copiar todos os links');
     });
 
-    // ---------- Novo vídeo ----------
+    // ---------- Novo ----------
     $('reset').addEventListener('click', () => {
-      if (busy || saving) return;
+      if (jobs.some(j => j.state === 'preparing' || j.state === 'saving' || j.state === 'queued')) return;
+      runId++;
+      clearJobs();
       source = null;
-      clearJob();
       $('localFile').value = '';
       $('driveUrl').value = '';
-      $('configuration').classList.add('hidden');
+      rows.forEach(r => r.el.remove());
+      rows = [];
+      if (mode === 'batch') { addRow(); addRow(); }
       $('status').classList.add('hidden');
+      updateConfig();
       showScreen('editor');
     });
 
-    window.addEventListener('beforeunload', (e) => { if (saving) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', (e) => {
+      if (jobs.some(j => j.state === 'preparing' || j.state === 'saving' || j.state === 'queued')) { e.preventDefault(); e.returnValue = ''; }
+    });
   </script>
 </body>
 </html>
