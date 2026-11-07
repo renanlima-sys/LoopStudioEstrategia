@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b14">
+  <title>Loop Studio</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #eef4ff;
+      background: radial-gradient(ellipse at 50% 12%, #12356a 0%, #0b1830 28%, #080b14 66%, #05070c 100%);
+      display: grid; place-items: center; padding: 28px 16px;
+    }
+    .shell { width: min(100%, 680px); }
+    header { display:flex; align-items:center; justify-content:space-between; margin: 0 2px 24px; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.12em; font-size:.9rem; }
+    .logo { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; color:#9ac5ff; background:linear-gradient(145deg,#193b69,#101c32); border:1px solid #31547f; }
+    .online { color:#9be7c1; font-size:.75rem; border:1px solid #24543f; background:#10271f; border-radius:99px; padding:6px 10px; }
+    .panel { border:1px solid rgba(123,169,226,.22); background:linear-gradient(145deg,rgba(20,34,57,.88),rgba(10,16,29,.94)); box-shadow:0 28px 90px #0009, inset 0 1px #ffffff0b; border-radius:26px; padding:clamp(22px,5vw,42px); backdrop-filter:blur(18px); }
+    .intro { text-align:center; margin-bottom:30px; }
+    h1 { margin:0 0 9px; font-size:clamp(2rem,6vw,3rem); letter-spacing:-.055em; }
+    .subtitle { color:#9aabc4; margin:0; line-height:1.55; }
+    .field-label { display:block; font-size:.86rem; font-weight:650; margin:0 0 10px; color:#d5e2f5; }
+    .input-wrap { display:flex; align-items:center; gap:10px; border:1px solid #2a405f; background:#091322; border-radius:14px; padding:0 15px; transition:border .2s,box-shadow .2s; }
+    .input-wrap:focus-within { border-color:#5597f4; box-shadow:0 0 0 4px #347ce51c; }
+    .input-wrap span { color:#78adf5; font-size:1.1rem; }
+    input[type=url], input[type=text] { width:100%; min-width:0; background:transparent; color:#eff6ff; border:0; outline:0; padding:17px 0; font:inherit; font-size:.94rem; }
+    input::placeholder { color:#71839d; }
+    button,.file-button { border:0; cursor:pointer; font:inherit; font-weight:700; border-radius:13px; transition:transform .18s,filter .18s,opacity .18s; }
+    button:hover,.file-button:hover { filter:brightness(1.12); transform:translateY(-1px); }
+    button:disabled { opacity:.45; cursor:not-allowed; transform:none; filter:none; }
+    .primary { width:100%; margin-top:14px; padding:16px 18px; color:white; background:linear-gradient(110deg,#2876e8,#3c91ff); box-shadow:0 9px 25px #1765d744; }
+    .secondary { padding:12px 16px; color:#c9ddfb; background:#172943; border:1px solid #2d4c72; }
+    a.file-button { display:grid; place-items:center; text-decoration:none; text-align:center; }
+    .hint { margin:10px 2px 0; color:#8193ad; font-size:.78rem; line-height:1.5; }
+    .section { margin-top:24px; padding-top:23px; border-top:1px solid #ffffff12; animation:rise .35s ease both; }
+    .section h2 { font-size:1rem; margin:0 0 7px; }
+    .muted { color:#91a3bd; font-size:.85rem; line-height:1.5; }
+    .file-meta { display:flex; align-items:center; gap:12px; padding:13px; background:#0a1525; border:1px solid #263c5a; border-radius:14px; margin-top:14px; }
+    .file-icon { width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:11px;background:#152e50;color:#8dbdff;font-size:1.2rem; }
+    .file-name { font-size:.87rem; font-weight:650; overflow-wrap:anywhere; }
+    .file-size { color:#91a3bd; font-size:.76rem; margin-top:4px; }
+    .durations { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+    .duration { background:#0a1525; border:1px solid #2a405f; color:#dceaff; padding:16px 8px; }
+    .duration[aria-pressed="true"] { border-color:#5597f4; background:linear-gradient(145deg,#193b66,#10233d); box-shadow:0 0 0 2px #438df322; }
+    .duration strong { display:block; font-size:1.25rem; }
+    .duration small { display:block; color:#91a9c9; font-size:.7rem; margin-top:4px; }
+    .status { margin-top:17px; padding:13px 14px; border-radius:12px; background:#0a1525; color:#a9bad2; font-size:.83rem; line-height:1.5; }
+    .status.error { color:#ffb4b4; background:#2a1215; border:1px solid #5a2a2f; }
+    .status.ok { color:#9be7c1; background:#10271f; border:1px solid #24543f; }
+    .progress-track { height:7px; background:#1a2a40; border-radius:99px; overflow:hidden; margin-top:10px; }
+    .progress-bar { width:0%; height:100%; background:linear-gradient(90deg,#2876e8,#70b4ff); transition:width .2s; }
+    .actions { display:flex; gap:10px; margin-top:14px; }
+    .actions > * { flex:1; margin-top:0 !important; }
+    .notice { color:#8ea1bb; font-size:.76rem; line-height:1.55; margin-top:19px; }
+    .hidden { display:none !important; }
+    footer { text-align:center; color:#62748d; font-size:.72rem; margin-top:18px; }
+
+    /* Tela de preview */
+    #preview { animation:rise .35s ease both; }
+    .badge { display:inline-flex; align-items:center; gap:6px; font-size:.75rem; font-weight:700; padding:6px 11px; border-radius:99px; margin-bottom:14px; color:#9be7c1; border:1px solid #24543f; background:#10271f; }
+    #preview h1 { font-size:clamp(1.6rem,5vw,2.3rem); }
+    .player { width:100%; aspect-ratio:16/9; background:#000; border-radius:16px; border:1px solid #263c5a; display:block; }
+    .link-row { display:flex; gap:8px; align-items:center; margin-top:16px; }
+    .link-row .input-wrap { flex:1; min-width:0; }
+    .link-row input { padding:14px 0; font-size:.84rem; }
+    .copy-btn { padding:15px 18px; white-space:nowrap; color:white; background:linear-gradient(110deg,#2876e8,#3c91ff); }
+    .copy-btn.done { background:#1d6b4a; }
+
+    .file-button.disabled { opacity:.45; pointer-events:none; }
+    .drive-frame { width:100%; aspect-ratio:16/9; border:1px solid #263c5a; border-radius:16px; background:#000; display:block; }
+    .placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #2d4c72; border-radius:16px; background:#0a1525; display:grid; place-items:center; text-align:center; color:#8ea1bb; font-size:.85rem; line-height:1.5; padding:20px; }
+    .placeholder strong { display:block; color:#d5e2f5; font-size:1rem; margin-bottom:6px; }
+    .step { color:#78adf5; font-weight:700; }
+    @keyframes rise { from {opacity:0;transform:translateY(9px)} to {opacity:1;transform:translateY(0)} }
+    @media(max-width:480px) { .panel{padding:23px 18px}.actions,.link-row{flex-direction:column;align-items:stretch}.durations{gap:7px}.duration{padding:14px 4px} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand"><div class="logo">▶</div><span>LOOP STUDIO</span></div>
+      <span class="online">● Pronto para usar</span>
+    </header>
+
+    <section class="panel">
+      <!-- ETAPA 1: escolher vídeo e duração -->
+      <div id="editor">
+        <div class="intro">
+          <h1>Seu vídeo. Seu tempo.</h1>
+          <p class="subtitle">Transforme um vídeo curto em um único arquivo de looping.</p>
+        </div>
+
+        <label class="field-label" for="driveUrl">Link do Google Drive <span style="color:#78adf5;font-weight:600">· mais rápido</span></label>
+        <div class="input-wrap">
+          <span>↗</span>
+          <input id="driveUrl" type="url" placeholder="Cole o link compartilhável do Drive" autocomplete="url">
+        </div>
+        <button id="loadDrive" class="primary" type="button">Usar vídeo do Drive</button>
+        <p class="hint">O vídeo não é baixado: o loop é montado direto no Google Drive. O arquivo precisa ser MP4 e estar compartilhado com “Qualquer pessoa com o link” (ou com a sua organização).</p>
+
+        <div style="text-align:center;margin:17px 0 0;color:#71839d;font-size:.78rem">ou</div>
+        <label id="localFileLabel" class="file-button secondary" for="localFile" style="display:block;text-align:center;margin-top:12px">Selecionar MP4 do computador</label>
+        <input id="localFile" class="hidden" type="file" accept="video/mp4,.mp4">
+
+        <section id="configuration" class="section hidden">
+          <h2>Configuração do looping</h2>
+          <p class="muted">Escolha a duração total do arquivo final.</p>
+          <div class="file-meta">
+            <div class="file-icon" id="sourceIcon">▣</div>
+            <div style="min-width:0"><div id="fileName" class="file-name"></div><div id="fileSize" class="file-size"></div></div>
+          </div>
+          <div class="durations" role="group" aria-label="Duração final">
+            <button type="button" class="duration" data-minutes="5" aria-pressed="true"><strong>05:00</strong><small>5 minutos</small></button>
+            <button type="button" class="duration" data-minutes="10" aria-pressed="false"><strong>10:00</strong><small>10 minutos</small></button>
+            <button type="button" class="duration" data-minutes="15" aria-pressed="false"><strong>15:00</strong><small>15 minutos</small></button>
+          </div>
+          <button id="generate" class="primary" type="button">✦ Gerar vídeo</button>
+          <div id="status" class="status hidden" role="status" aria-live="polite">
+            <div id="statusText">Preparando...</div>
+            <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ETAPA 2: preview, salvar no Drive, copiar link e download -->
+      <div id="preview" class="hidden">
+        <div class="intro" style="margin-bottom:22px">
+          <span class="badge">✓ Loop montado</span>
+          <h1>Seu looping está pronto</h1>
+          <p class="subtitle" id="previewSubtitle">Confira o resultado abaixo.</p>
+        </div>
+
+        <video id="previewVideo" class="player hidden" controls playsinline preload="metadata"></video>
+        <div id="previewPlaceholder" class="placeholder hidden"><div><strong>Salvando no Google Drive…</strong>O preview aparece aqui assim que o arquivo terminar de ser salvo.</div></div>
+        <iframe id="previewFrame" class="drive-frame hidden" allow="autoplay" title="Preview no Google Drive"></iframe>
+
+        <div class="file-meta">
+          <div class="file-icon">▣</div>
+          <div style="min-width:0"><div id="outName" class="file-name"></div><div id="outInfo" class="file-size"></div></div>
+        </div>
+
+        <div id="uploadStatus" class="status" role="status" aria-live="polite">
+          <div id="uploadText">Salvando no Google Drive...</div>
+          <div id="uploadTrack" class="progress-track"><div id="uploadBar" class="progress-bar"></div></div>
+        </div>
+        <button id="retryUpload" class="secondary hidden" type="button" style="width:100%;margin-top:10px">↻ Tentar salvar novamente</button>
+
+        <div class="link-row">
+          <div class="input-wrap"><span>🔗</span><input id="driveLink" type="text" readonly placeholder="O link aparece aqui após salvar" aria-label="Link do arquivo no Google Drive"></div>
+          <button id="copyLink" class="copy-btn" type="button" disabled>Copiar link</button>
+        </div>
+
+        <div class="actions">
+          <a id="downloadLink" class="file-button primary disabled" download="loop-studio.mp4">⬇ Baixar MP4</a>
+          <a id="openDrive" class="file-button secondary hidden" target="_blank" rel="noopener">Abrir no Drive</a>
+        </div>
+        <button id="reset" class="secondary" type="button" style="width:100%;margin-top:10px">Novo vídeo</button>
+      </div>
+
+      <p class="notice">O loop é montado sem recodificar: o vídeo final tem exatamente a mesma qualidade do original. Com link do Drive, nada é baixado para o computador; com arquivo do computador, o original é enviado uma única vez para o Drive.</p>
+    </section>
+    <footer>LOOP STUDIO · Montagem instantânea · Salvo no Google Drive</footer>
+  </main>
+
+  <script type="module">
+    // ===================== CONFIGURAÇÃO =====================
+    // Cole aqui a URL do App da Web do Apps Script (termina em /exec).
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynZOe0lZXcKKHEmUNOdYvwJkYitJtEf4ADaEcc_VHsY-msB5gYLXQel9A-NtQ30M9B/exec';
+    // ========================================================
+
+    // ================= MONTAGEM DO LOOP (sem recodificar) =================
+    // O loop é o mesmo conteúdo repetido. Reescrevemos apenas o índice do MP4 (caixa "moov")
+    // e o arquivo final passa a ser: [cabeçalho novo] + [bytes do vídeo original] x N + [parte final].
+    // Não há decodificação/recodificação: leva milissegundos, independente do tamanho do vídeo.
+
+    const fourcc = (u8, p) => String.fromCharCode(u8[p], u8[p + 1], u8[p + 2], u8[p + 3]);
+
+    function readBoxes(u8, start, end) {
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      const out = [];
+      let p = start;
+      while (p + 8 <= end) {
+        let size = dv.getUint32(p);
+        const type = fourcc(u8, p + 4);
+        let hs = 8;
+        if (size === 1) { size = Number(dv.getBigUint64(p + 8)); hs = 16; }
+        else if (size === 0) size = end - p;
+        if (size < hs || p + size > end) throw new Error(`MP4 inválido (caixa ${type}).`);
+        out.push({ type, start: p, size, body: p + hs, end: p + size });
+        p += size;
+      }
+      return out;
+    }
+    const childBox = (u8, parent, type) => readBoxes(u8, parent.body, parent.end).find(b => b.type === type);
+    const rawBox = (u8, b) => u8.slice(b.start, b.end);
+
+    function makeBox(type, parts) {
+      let len = 8;
+      for (const p of parts) len += p.length;
+      const out = new Uint8Array(len);
+      new DataView(out.buffer).setUint32(0, len);
+      for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+      let o = 8;
+      for (const p of parts) { out.set(p, o); o += p.length; }
+      return out;
+    }
+
+    // Tabela "full box": versão/flags + contagem + entradas de tamanho fixo.
+    function makeTable(type, version, flags, rows, rowBytes, writeRow, extraHeader) {
+      const head = extraHeader ? extraHeader.length : 0;
+      const body = new Uint8Array(4 + head + 4 + rows.length * rowBytes);
+      const dv = new DataView(body.buffer);
+      dv.setUint32(0, (version << 24) | flags);
+      if (head) body.set(extraHeader, 4);
+      dv.setUint32(4 + head, rows.length);
+      let o = 8 + head;
+      for (const r of rows) { writeRow(dv, o, r); o += rowBytes; }
+      return makeBox(type, [body]);
+    }
+
+    function runLength(values) {
+      const runs = [];
+      for (const v of values) {
+        const last = runs[runs.length - 1];
+        if (last && last[1] === v) last[0]++; else runs.push([1, v]);
+      }
+      return runs;
+    }
+
+    function parseTrack(u8, trak) {
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      const mdia = childBox(u8, trak, 'mdia');
+      const mdhd = childBox(u8, mdia, 'mdhd');
+      const hdlr = childBox(u8, mdia, 'hdlr');
+      const minf = childBox(u8, mdia, 'minf');
+      const stbl = childBox(u8, minf, 'stbl');
+      if (!mdhd || !hdlr || !stbl) return null;
+      const handler = fourcc(u8, hdlr.body + 8);
+      const timescale = dv.getUint32(mdhd.body + (u8[mdhd.body] === 1 ? 20 : 12));
+      const get = (t) => childBox(u8, stbl, t);
+
+      // Tamanhos
+      const stsz = get('stsz');
+      if (!stsz) throw new Error('MP4 sem tabela de amostras (stsz).');
+      const fixedSize = dv.getUint32(stsz.body + 4);
+      const count = dv.getUint32(stsz.body + 8);
+      const sizes = new Float64Array(count);
+      for (let i = 0; i < count; i++) sizes[i] = fixedSize || dv.getUint32(stsz.body + 12 + i * 4);
+
+      // Durações
+      const durs = new Float64Array(count);
+      const stts = get('stts');
+      { let n = dv.getUint32(stts.body + 4), i = 0, o = stts.body + 8;
+        for (let e = 0; e < n; e++, o += 8) { const c = dv.getUint32(o), d = dv.getUint32(o + 4); for (let k = 0; k < c && i < count; k++) durs[i++] = d; } }
+
+      // Deslocamento de composição (B-frames)
+      const cttsBox = get('ctts');
+      let ctts = null, cttsVersion = 0;
+      if (cttsBox) {
+        cttsVersion = u8[cttsBox.body];
+        ctts = new Uint32Array(count);
+        let n = dv.getUint32(cttsBox.body + 4), i = 0, o = cttsBox.body + 8;
+        for (let e = 0; e < n; e++, o += 8) { const c = dv.getUint32(o), v = dv.getUint32(o + 4); for (let k = 0; k < c && i < count; k++) ctts[i++] = v; }
+      }
+
+      // Quadros-chave
+      const stssBox = get('stss');
+      let sync = null;
+      if (stssBox) {
+        sync = new Uint8Array(count);
+        const n = dv.getUint32(stssBox.body + 4);
+        for (let e = 0; e < n; e++) { const idx = dv.getUint32(stssBox.body + 8 + e * 4) - 1; if (idx >= 0 && idx < count) sync[idx] = 1; }
+      }
+
+      // Posição de cada amostra no arquivo (stsc + stco/co64)
+      const stco = get('stco'), co64 = get('co64');
+      const chunkBox = co64 || stco;
+      if (!chunkBox) throw new Error('MP4 sem tabela de posições (stco).');
+      const chunkCount = dv.getUint32(chunkBox.body + 4);
+      const chunkOffset = (c) => co64 ? Number(dv.getBigUint64(co64.body + 8 + c * 8)) : dv.getUint32(stco.body + 8 + c * 4);
+      const stsc = get('stsc');
+      const scN = dv.getUint32(stsc.body + 4);
+      const sc = [];
+      for (let e = 0; e < scN; e++) { const o = stsc.body + 8 + e * 12; sc.push([dv.getUint32(o), dv.getUint32(o + 4), dv.getUint32(o + 8)]); }
+      const offsets = new Float64Array(count);
+      const sdi = new Uint32Array(count);
+      let s = 0;
+      for (let e = 0; e < sc.length && s < count; e++) {
+        const firstChunk = sc[e][0] - 1;
+        const lastChunk = e + 1 < sc.length ? sc[e + 1][0] - 2 : chunkCount - 1;
+        for (let c = firstChunk; c <= lastChunk && s < count; c++) {
+          let off = chunkOffset(c);
+          for (let k = 0; k < sc[e][1] && s < count; k++, s++) { offsets[s] = off; sdi[s] = sc[e][2]; off += sizes[s]; }
+        }
+      }
+      if (s < count) throw new Error('MP4 com índice incompleto.');
+
+      return { trak, mdia, mdhd, minf, stbl, handler, timescale, count, sizes, durs, ctts, cttsVersion, sync, offsets, sdi,
+               stsd: get('stsd'), fixedSize, edts: childBox(u8, trak, 'edts') };
+    }
+
+    function patchDuration(bytes, offsetV0, offsetV1, value) {
+      const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      if (bytes[8] === 1) dv.setBigUint64(offsetV1, BigInt(Math.round(value)));
+      else {
+        if (value > 0xFFFFFFFF) throw new Error('Duração muito longa para este MP4.');
+        dv.setUint32(offsetV0, Math.round(value));
+      }
+      return bytes;
+    }
+
+    /**
+     * Monta o plano do arquivo em loop.
+     * @param {Uint8Array} moovBytes caixa moov completa do vídeo original
+     * @param {Uint8Array|null} ftypBytes caixa ftyp do vídeo original
+     * @param {number} targetSec duração final em segundos
+     * @returns {{header:Uint8Array,a:number,P:number,n:number,Q:number,total:number,loopSec:number}}
+     *   Arquivo final = header + origem[a, a+P) repetido n vezes + origem[a, a+Q)
+     */
+    function buildLoopPlan(moovBytes, ftypBytes, targetSec) {
+      const u8 = moovBytes;
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      const moov = readBoxes(u8, 0, u8.length)[0];
+      if (!moov || moov.type !== 'moov') throw new Error('Índice do MP4 (moov) não encontrado.');
+      const kids = readBoxes(u8, moov.body, moov.end);
+      if (kids.some(b => b.type === 'mvex')) throw new Error('MP4 fragmentado não é suportado. Exporte o vídeo como MP4 padrão.');
+      const mvhd = kids.find(b => b.type === 'mvhd');
+      const movieTs = dv.getUint32(mvhd.body + (u8[mvhd.body] === 1 ? 20 : 12));
+
+      const tracks = kids.filter(b => b.type === 'trak').map(t => parseTrack(u8, t)).filter(Boolean);
+      const video = tracks.find(t => t.handler === 'vide' && t.count > 0);
+      if (!video) throw new Error('Nenhuma faixa de vídeo encontrada no MP4.');
+      const audio = tracks.find(t => t.handler === 'soun' && t.count > 0);
+      const used = audio ? [video, audio] : [video];
+
+      // Duração de uma volta = duração da faixa de vídeo.
+      let videoLen = 0;
+      for (let i = 0; i < video.count; i++) videoLen += video.durs[i];
+      const loopSec = videoLen / video.timescale;
+      if (!(loopSec > 0.04)) throw new Error('Vídeo curto demais.');
+
+      // Trecho de bytes do original que contém todas as amostras usadas.
+      let a = Infinity, end = 0;
+      for (const t of used) for (let i = 0; i < t.count; i++) { a = Math.min(a, t.offsets[i]); end = Math.max(end, t.offsets[i] + t.sizes[i]); }
+      const P = end - a;
+
+      const nFull = Math.floor(targetSec / loopSec + 1e-9);
+      const partial = targetSec - nFull * loopSec > 1e-6;
+      const loops = nFull + (partial ? 1 : 0);
+      let Q = 0;
+
+      // Amostras de cada faixa no arquivo final.
+      for (const t of used) {
+        const ts = t.timescale;
+        const target = Math.round(targetSec * ts);
+        const srcDts = new Float64Array(t.count);
+        for (let i = 1; i < t.count; i++) srcDts[i] = srcDts[i - 1] + t.durs[i - 1];
+        const out = { durs: [], sizes: [], ctts: [], sync: [], sdi: [], rel: [] };
+        for (let k = 0; k < loops; k++) {
+          const start = Math.round(k * loopSec * ts);
+          const len = Math.round((k + 1) * loopSec * ts) - start;
+          const limit = Math.min(len, target - start); // fim desta volta (ou fim do vídeo final)
+          let last = -1;
+          for (let i = 0; i < t.count; i++) {
+            if (srcDts[i] >= limit) break;
+            out.durs.push(t.durs[i]); out.sizes.push(t.sizes[i]); out.sdi.push(t.sdi[i]);
+            if (t.ctts) out.ctts.push(t.ctts[i]);
+            if (t.sync) out.sync.push(t.sync[i]);
+            out.rel.push(k * P + (t.offsets[i] - a));
+            if (k === nFull) Q = Math.max(Q, t.offsets[i] + t.sizes[i] - a);
+            last = i;
+          }
+          // Ajusta a última amostra da volta para fechar exatamente no tempo certo.
+          if (last >= 0) out.durs[out.durs.length - 1] = Math.max(1, limit - srcDts[last]);
+        }
+        t.out = out;
+        t.newDur = out.durs.reduce((s, d) => s + d, 0);
+      }
+      if (!partial) Q = 0;
+
+      const build = (H) => {
+        const trakBoxes = used.map(t => buildTrak(u8, t, H, movieTs));
+        const movieDur = Math.max(...used.map(t => Math.round(t.newDur / t.timescale * movieTs)));
+        const mvhdBytes = patchDuration(rawBox(u8, mvhd), 8 + 16, 8 + 24, movieDur);
+        const others = kids.filter(b => !['mvhd', 'trak'].includes(b.type)).map(b => rawBox(u8, b));
+        return makeBox('moov', [mvhdBytes, ...others, ...trakBoxes]);
+      };
+      const ftyp = ftypBytes || makeBox('ftyp', [new TextEncoder().encode('isom'), new Uint8Array([0, 0, 2, 0]), new TextEncoder().encode('isomiso2avc1mp41')]);
+      const moovSize = build(0).length;
+      const H = ftyp.length + moovSize + 16;
+      const newMoov = build(H);
+
+      const mdatSize = 16 + nFull * P + Q;
+      const mdatHead = new Uint8Array(16);
+      const mdv = new DataView(mdatHead.buffer);
+      mdv.setUint32(0, 1); mdatHead.set([0x6d, 0x64, 0x61, 0x74], 4); mdv.setBigUint64(8, BigInt(mdatSize));
+
+      const header = new Uint8Array(H);
+      header.set(ftyp, 0); header.set(newMoov, ftyp.length); header.set(mdatHead, ftyp.length + newMoov.length);
+      return { header, a, P, n: nFull, Q, total: H + nFull * P + Q, loopSec };
+    }
+
+    function buildTrak(u8, t, H, movieTs) {
+      const o = t.out;
+      const tables = [rawBox(u8, t.stsd)];
+      tables.push(makeTable('stts', 0, 0, runLength(o.durs), 8, (dv, p, r) => { dv.setUint32(p, r[0]); dv.setUint32(p + 4, r[1]); }));
+      if (t.ctts) tables.push(makeTable('ctts', t.cttsVersion, 0, runLength(o.ctts), 8, (dv, p, r) => { dv.setUint32(p, r[0]); dv.setUint32(p + 4, r[1]); }));
+      if (t.sync) {
+        const idx = []; o.sync.forEach((v, i) => { if (v) idx.push(i + 1); });
+        tables.push(makeTable('stss', 0, 0, idx, 4, (dv, p, r) => dv.setUint32(p, r)));
+      }
+      // Uma amostra por bloco: índice simples e válido.
+      const stscRows = [];
+      o.sdi.forEach((d, i) => { if (!stscRows.length || stscRows[stscRows.length - 1][2] !== d) stscRows.push([i + 1, 1, d]); });
+      tables.push(makeTable('stsc', 0, 0, stscRows, 12, (dv, p, r) => { dv.setUint32(p, r[0]); dv.setUint32(p + 4, r[1]); dv.setUint32(p + 8, r[2]); }));
+      { // stsz
+        const body = new Uint8Array(12 + o.sizes.length * 4);
+        const dv = new DataView(body.buffer);
+        dv.setUint32(8, o.sizes.length);
+        o.sizes.forEach((s, i) => dv.setUint32(12 + i * 4, s));
+        tables.push(makeBox('stsz', [body]));
+      }
+      tables.push(makeTable('co64', 0, 0, o.rel, 8, (dv, p, r) => dv.setBigUint64(p, BigInt(H + r))));
+      const stbl = makeBox('stbl', tables);
+
+      const minfKids = readBoxes(u8, t.minf.body, t.minf.end).map(b => b.type === 'stbl' ? stbl : rawBox(u8, b));
+      const minf = makeBox('minf', minfKids);
+      const mdhd = patchDuration(rawBox(u8, t.mdhd), 8 + 16, 8 + 24, t.newDur);
+      const mdiaKids = readBoxes(u8, t.mdia.body, t.mdia.end).map(b => b.type === 'mdhd' ? mdhd : b.type === 'minf' ? minf : rawBox(u8, b));
+      const mdia = makeBox('mdia', mdiaKids);
+      const tkhdDur = Math.round(t.newDur / t.timescale * movieTs);
+
+      const trakKids = [];
+      for (const b of readBoxes(u8, t.trak.body, t.trak.end)) {
+        if (b.type === 'tkhd') trakKids.push(patchDuration(rawBox(u8, b), 8 + 20, 8 + 28, tkhdDur));
+        else if (b.type === 'mdia') trakKids.push(mdia);
+        else if (b.type === 'edts') { const e = buildEdts(u8, b, t, movieTs); if (e) trakKids.push(e); }
+        else if (b.type !== 'tref') trakKids.push(rawBox(u8, b)); // tref apontaria para faixas removidas
+      }
+      return makeBox('trak', trakKids);
+    }
+
+    // Lista de edição: mantém o atraso inicial (ex.: B-frames, "priming" do AAC) e ajusta a duração.
+    function buildEdts(u8, edts, t, movieTs) {
+      const elst = childBox(u8, edts, 'elst');
+      if (!elst) return null;
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      const v = u8[elst.body];
+      const n = dv.getUint32(elst.body + 4);
+      const rows = [];
+      let p = elst.body + 8;
+      for (let i = 0; i < n; i++) {
+        const seg = v === 1 ? Number(dv.getBigUint64(p)) : dv.getUint32(p);
+        const mt = v === 1 ? Number(dv.getBigInt64(p + 8)) : dv.getInt32(p + 4);
+        const rate = dv.getUint32(p + (v === 1 ? 16 : 8));
+        p += v === 1 ? 20 : 12;
+        if (mt === -1) { rows.push([seg, -1, rate]); continue; }
+        rows.push([Math.max(0, Math.round((t.newDur - mt) / t.timescale * movieTs)), mt, rate]);
+        break;
+      }
+      if (!rows.length) return null;
+      const elstBox = makeTable('elst', 1, 0, rows, 20, (d, q, r) => { d.setBigUint64(q, BigInt(r[0])); d.setBigInt64(q + 8, BigInt(r[1])); d.setUint32(q + 16, r[2]); });
+      return makeBox('edts', [elstBox]);
+    }
+
+    /** Lê a estrutura de nível superior do MP4 e devolve as caixas ftyp e moov. */
+    async function readMp4Index(readRange, fileSize) {
+      let pos = 0, ftyp = null, moov = null;
+      while (pos + 8 <= fileSize && !moov) {
+        const head = await readRange(pos, Math.min(16, fileSize - pos));
+        const dv = new DataView(head.buffer, head.byteOffset, head.byteLength);
+        let size = dv.getUint32(0);
+        const type = fourcc(head, 4);
+        if (size === 1) size = Number(dv.getBigUint64(8));
+        else if (size === 0) size = fileSize - pos;
+        if (size < 8 || pos + size > fileSize) throw new Error('Arquivo MP4 inválido ou corrompido.');
+        if (type === 'moov') {
+          if (size > 200 * 1024 * 1024) throw new Error('Índice do MP4 grande demais.');
+          moov = await readRange(pos, size);
+        } else if (type === 'ftyp' && size < 4096) ftyp = await readRange(pos, size);
+        else if (type === 'moof') throw new Error('MP4 fragmentado não é suportado. Exporte o vídeo como MP4 padrão.');
+        pos += size;
+      }
+      if (!moov) throw new Error('Não encontrei o índice do MP4. O arquivo pode estar incompleto.');
+      return { ftyp, moov };
+    }
+    // =====================================================================
+
+
+    const $ = (id) => document.getElementById(id);
+    const TMP_PREFIX = '.loopstudio-tmp-';
+    const READ_PIECE = 8 * 1024 * 1024;     // leitura do índice via Apps Script
+    const DIRECT_CHUNK = 16 * 1024 * 1024;  // envio direto navegador → Drive
+    const RELAY_CHUNK = 24 * 1024 * 1024;   // envio pelo Apps Script (quando o direto não é possível)
+
+    let source = null;   // { kind: 'local', file, name, size } | { kind: 'drive', id, resourceKey, name, size }
+    let job = null;      // { plan, source, name, minutes, blob, url }
+    let selectedMinutes = 5;
+    let busy = false;
+    let saving = false;
+
+    const formatMB = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const scriptReady = () => APPS_SCRIPT_URL.startsWith('https://script.google.com/');
+
+    const setStatus = (message, percent = 0, kind = '') => {
+      $('status').classList.remove('hidden', 'error', 'ok');
+      if (kind) $('status').classList.add(kind);
+      $('statusText').textContent = message;
+      $('progressBar').style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    };
+
+    const setUpload = (message, percent = 0, kind = '') => {
+      const box = $('uploadStatus');
+      box.classList.remove('hidden', 'error', 'ok');
+      if (kind) box.classList.add(kind);
+      $('uploadText').innerHTML = message;
+      $('uploadTrack').classList.toggle('hidden', kind !== '');
+      $('uploadBar').style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    };
+
+    function showScreen(name) {
+      $('editor').classList.toggle('hidden', name !== 'editor');
+      $('preview').classList.toggle('hidden', name !== 'preview');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setBusy(value) {
+      busy = value;
+      $('generate').disabled = value;
+      $('loadDrive').disabled = value;
+      $('localFile').disabled = value;
+      $('localFileLabel').classList.toggle('disabled', value);
+      document.querySelectorAll('.duration').forEach(b => b.disabled = value);
+    }
+
+    // ---------- Apps Script ----------
+    async function callScript(payload) {
+      // Corpo como texto simples: evita a verificação prévia de CORS (preflight), que o Apps Script não suporta.
+      const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error(`o Apps Script respondeu com status ${res.status}.`);
+      let data;
+      try { data = await res.json(); }
+      catch { throw new Error('resposta inválida do Apps Script. Verifique se a implantação está com acesso “Qualquer pessoa”.'); }
+      if (!data.ok) throw new Error(data.error || 'erro desconhecido no Apps Script.');
+      return data;
+    }
+
+    async function retry(fn, tries = 3) {
+      for (let i = 1; ; i++) {
+        try { return await fn(); }
+        catch (err) { if (i >= tries) throw err; await sleep(1500 * i); }
+      }
+    }
+
+    const base64ToBytes = async (b64) => new Uint8Array(await (await fetch(`data:application/octet-stream;base64,${b64}`)).arrayBuffer());
+    const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+    // ---------- Origem do vídeo ----------
+    function showSource(src) {
+      source = src;
+      $('fileName').textContent = src.name;
+      $('fileSize').textContent = `${formatMB(src.size)} · ${src.kind === 'drive' ? 'no Google Drive' : 'no computador'}`;
+      $('sourceIcon').textContent = src.kind === 'drive' ? '☁' : '▣';
+      $('configuration').classList.remove('hidden');
+      $('status').classList.add('hidden');
+      $('configuration').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    $('localFile').addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if (!file || busy) return;
+      if (file.type !== 'video/mp4' && !file.name.toLowerCase().endsWith('.mp4')) { alert('Selecione um arquivo MP4.'); return; }
+      showSource({ kind: 'local', file, name: file.name, size: file.size });
+    });
+
+    function parseDriveLink(value) {
+      try {
+        const url = new URL(value);
+        if (url.hostname === 'drive.google.com' || url.hostname.endsWith('.drive.google.com') || url.hostname === 'drive.usercontent.google.com' || url.hostname === 'docs.google.com') {
+          const byPath = url.pathname.match(/\/file\/d\/([^/]+)/);
+          const id = url.searchParams.get('id') || byPath?.[1] || null;
+          return id ? { id, resourceKey: url.searchParams.get('resourcekey') || '' } : null;
+        }
+      } catch {}
+      return null;
+    }
+
+    $('loadDrive').addEventListener('click', async () => {
+      if (busy) return;
+      const link = parseDriveLink($('driveUrl').value.trim());
+      if (!link) { alert('Cole um link válido de compartilhamento do Google Drive (ex.: https://drive.google.com/file/d/.../view).'); return; }
+      if (!scriptReady()) { alert('Falta configurar a URL do Apps Script no index.html.'); return; }
+      $('loadDrive').disabled = true;
+      $('loadDrive').textContent = 'Verificando o vídeo...';
+      try {
+        const info = await callScript({ action: 'info', ...link });
+        if (info.mimeType !== 'video/mp4' && !/\.mp4$/i.test(info.name || '')) throw new Error('o vídeo precisa estar em MP4.');
+        showSource({ kind: 'drive', ...link, name: info.name, size: info.size });
+      } catch (error) {
+        console.error(error);
+        alert(`Não foi possível usar este link: ${error?.message || error}`);
+      } finally {
+        $('loadDrive').disabled = busy;
+        $('loadDrive').textContent = 'Usar vídeo do Drive';
+      }
+    });
+
+    document.querySelectorAll('.duration').forEach(button => {
+      button.addEventListener('click', () => {
+        if (busy) return;
+        selectedMinutes = Number(button.dataset.minutes);
+        document.querySelectorAll('.duration').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      });
+    });
+
+    // Lê um trecho do vídeo de origem (só o índice é lido, alguns KB/MB).
+    function rangeReader(src) {
+      if (src.kind === 'local') return async (pos, len) => new Uint8Array(await src.file.slice(pos, pos + len).arrayBuffer());
+      return async (pos, len) => {
+        const out = new Uint8Array(len);
+        for (let done = 0; done < len; ) {
+          const piece = Math.min(READ_PIECE, len - done);
+          const r = await retry(() => callScript({ action: 'read', id: src.id, resourceKey: src.resourceKey, start: pos + done, end: pos + done + piece - 1 }));
+          const bytes = await base64ToBytes(r.data);
+          if (!bytes.length) throw new Error('o Drive devolveu um trecho vazio.');
+          out.set(bytes.subarray(0, len - done), done);
+          done += bytes.length;
+        }
+        return out;
+      };
+    }
+
+    function buildOutputName(src, minutes) {
+      const base = (src.name || 'video').replace(/\.mp4$/i, '').replace(/[^\w\-À-ÿ]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'video';
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return `${base}-loop-${minutes}min-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.mp4`;
+    }
+
+    // ---------- Gerar ----------
+    $('generate').addEventListener('click', async () => {
+      if (!source || busy) return;
+      setBusy(true);
+      clearJob();
+      try {
+        setStatus('Lendo o índice do vídeo...', 25);
+        const index = await readMp4Index(rangeReader(source), source.size);
+        setStatus('Montando o loop...', 80);
+        const minutes = selectedMinutes;
+        const plan = buildLoopPlan(index.moov, index.ftyp, minutes * 60);
+        job = { plan, source, minutes, name: buildOutputName(source, minutes) };
+
+        if (source.kind === 'local') {
+          // Arquivo final montado na hora a partir de pedaços do original (sem copiar memória).
+          const body = source.file.slice(plan.a, plan.a + plan.P);
+          const parts = [plan.header];
+          for (let k = 0; k < plan.n; k++) parts.push(body);
+          if (plan.Q) parts.push(source.file.slice(plan.a, plan.a + plan.Q));
+          job.blob = new Blob(parts, { type: 'video/mp4' });
+          job.url = URL.createObjectURL(job.blob);
+        }
+        setStatus('Loop montado!', 100, 'ok');
+        openPreview();
+        saveToDrive();
+      } catch (error) {
+        console.error(error);
+        setStatus(`Não foi possível gerar o vídeo: ${error?.message || error}`, 0, 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    function clearJob() {
+      if (job?.url) URL.revokeObjectURL(job.url);
+      job = null;
+      $('previewVideo').removeAttribute('src');
+      $('previewVideo').load();
+      $('previewFrame').removeAttribute('src');
+    }
+
+    // ---------- Preview ----------
+    function openPreview() {
+      const local = !!job.url;
+      $('previewVideo').classList.toggle('hidden', !local);
+      $('previewPlaceholder').classList.toggle('hidden', local);
+      $('previewFrame').classList.add('hidden');
+      if (local) $('previewVideo').src = job.url;
+
+      $('outName').textContent = job.name;
+      $('outInfo').textContent = `${String(job.minutes).padStart(2, '0')}:00 · ${formatMB(job.plan.total)} · volta de ${job.plan.loopSec.toFixed(1)} s`;
+      const dl = $('downloadLink');
+      if (local) { dl.href = job.url; dl.download = job.name; dl.removeAttribute('target'); dl.classList.remove('disabled'); }
+      else { dl.removeAttribute('href'); dl.classList.add('disabled'); }
+      $('driveLink').value = '';
+      $('copyLink').disabled = true;
+      $('copyLink').textContent = 'Copiar link';
+      $('copyLink').classList.remove('done');
+      $('openDrive').classList.add('hidden');
+      $('retryUpload').classList.add('hidden');
+      $('previewSubtitle').textContent = local ? 'Confira o resultado abaixo. O arquivo está sendo salvo no Drive.' : 'O arquivo está sendo montado direto no Google Drive.';
+      showScreen('preview');
+    }
+
+    // ---------- Envio do arquivo do computador para o Drive ----------
+    function parseRange(res, fallback) {
+      const m = (res.headers.get('Range') || '').match(/bytes=0-(\d+)/);
+      return m ? Number(m[1]) + 1 : fallback;
+    }
+
+    async function uploadBlob(blob, name, onProgress) {
+      const origin = /^https?:$/.test(location.protocol) ? location.origin : '';
+      const { uploadUrl } = await callScript({ action: 'start', name, size: blob.size, origin });
+      const total = blob.size;
+      let pos = 0;
+
+      // 1) Direto navegador → Drive (rápido). Funciona quando a página está hospedada (http/https).
+      if (origin) {
+        try {
+          while (pos < total) {
+            const end = Math.min(pos + DIRECT_CHUNK, total);
+            const res = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Range': `bytes ${pos}-${end - 1}/${total}` }, body: blob.slice(pos, end) });
+            if (res.status === 200 || res.status === 201) {
+              const f = await res.json();
+              return { id: f.id, link: f.webViewLink || `https://drive.google.com/file/d/${f.id}/view` };
+            }
+            if (res.status !== 308) throw new Error(`status ${res.status}`);
+            pos = parseRange(res, end);
+            onProgress(pos, total);
+          }
+        } catch (err) {
+          console.warn('Envio direto indisponível, usando o Apps Script.', err);
+          pos = (await callScript({ action: 'status', uploadUrl, total })).next || 0;
+        }
+      }
+
+      // 2) Pelo Apps Script (mais lento; usado ao abrir o arquivo direto do computador).
+      while (pos < total) {
+        const end = Math.min(pos + RELAY_CHUNK, total);
+        const data = await blobToBase64(blob.slice(pos, end));
+        const r = await retry(() => callScript({ action: 'chunk', uploadUrl, start: pos, total, data }));
+        if (r.done) return { id: r.id, link: r.link };
+        pos = r.next > pos ? r.next : end;
+        onProgress(pos, total);
+      }
+      throw new Error('o Drive não confirmou o fim do envio.');
+    }
+
+    // ---------- Salvar no Drive ----------
+    async function saveToDrive() {
+      if (!job || saving) return;
+      if (!scriptReady()) {
+        setUpload('Salvamento no Drive não configurado (falta a URL do Apps Script).' + (job.url ? ' Use “Baixar MP4”.' : ''), 0, 'error');
+        return;
+      }
+      const current = job;
+      saving = true;
+      $('retryUpload').classList.add('hidden');
+      $('reset').disabled = true;
+      let tempId = null;
+      try {
+        const local = current.source.kind === 'local';
+        let src = local ? null : { id: current.source.id, resourceKey: current.source.resourceKey };
+
+        if (local) {
+          // O original é enviado uma única vez; as repetições são feitas no próprio Drive.
+          const up = await uploadBlob(current.source.file, `${TMP_PREFIX}${Date.now()}.mp4`, (done, total) =>
+            setUpload(`<span class="step">Etapa 1 de 2</span> · Enviando o vídeo original... ${Math.round(done / total * 100)}% (${formatMB(done)} de ${formatMB(total)})`, done / total * 100));
+          tempId = up.id;
+          src = { id: up.id, resourceKey: '' };
+        }
+
+        const prefix = local ? '<span class="step">Etapa 2 de 2</span> · ' : '';
+        const plan = current.plan;
+        const p = { H: plan.header.length, a: plan.a, P: plan.P, n: plan.n, Q: plan.Q, total: plan.total };
+        setUpload(`${prefix}Montando o arquivo no Drive... 0%`, 0);
+        const { uploadUrl } = await callScript({ action: 'start', name: current.name, size: plan.total });
+        const headerB64 = await blobToBase64(new Blob([plan.header]));
+        const t0 = Date.now();
+        let pos = 0, result = null;
+        while (!result) {
+          let r;
+          try {
+            r = await callScript({ action: 'pump', uploadUrl, ...src, plan: p, pos, header: pos < p.H ? headerB64 : undefined });
+          } catch (err) {
+            // Se uma chamada cair no meio, pergunta ao Drive até onde chegou e continua de lá.
+            await sleep(2000);
+            const s = await retry(() => callScript({ action: 'status', uploadUrl, total: p.total }));
+            if (s.done) { result = s; break; }
+            if (s.next <= pos) { if ((current.fails = (current.fails || 0) + 1) >= 3) throw err; }
+            pos = s.next;
+            continue;
+          }
+          if (r.done) { result = r; break; }
+          pos = r.pos;
+          const pct = pos / p.total * 100;
+          const speed = pos / Math.max(1, (Date.now() - t0) / 1000);
+          const eta = speed > 0 ? Math.round((p.total - pos) / speed) : 0;
+          setUpload(`${prefix}Montando o arquivo no Drive... ${Math.round(pct)}% (${formatMB(pos)} de ${formatMB(p.total)}${eta ? ` · ~${eta < 60 ? eta + ' s' : Math.ceil(eta / 60) + ' min'} restantes` : ''})`, pct);
+        }
+
+        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
+        if (current !== job) return;
+        showSaved(result);
+      } catch (error) {
+        console.error(error);
+        if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
+        if (current !== job) return;
+        setUpload(`Não foi possível salvar no Drive: ${error?.message || error}${current.url ? ' Você ainda pode baixar o MP4.' : ''}`, 0, 'error');
+        $('retryUpload').classList.remove('hidden');
+      } finally {
+        saving = false;
+        $('reset').disabled = false;
+      }
+    }
+
+    function showSaved(result) {
+      $('driveLink').value = result.link;
+      $('copyLink').disabled = false;
+      $('openDrive').href = result.link;
+      $('openDrive').classList.remove('hidden');
+      $('previewSubtitle').textContent = 'Arquivo salvo na pasta do Google Drive.';
+      setUpload('✓ Salvo no Google Drive com sucesso.', 100, 'ok');
+      if (!job.url) {
+        // Origem no Drive: preview e download pelo próprio Drive.
+        $('previewPlaceholder').classList.add('hidden');
+        $('previewFrame').src = `https://drive.google.com/file/d/${result.id}/preview`;
+        $('previewFrame').classList.remove('hidden');
+        const dl = $('downloadLink');
+        dl.href = `https://drive.google.com/uc?export=download&id=${result.id}`;
+        dl.target = '_blank';
+        dl.classList.remove('disabled');
+      }
+    }
+
+    $('retryUpload').addEventListener('click', saveToDrive);
+
+    // ---------- Copiar link ----------
+    $('copyLink').addEventListener('click', async () => {
+      const link = $('driveLink').value;
+      if (!link) return;
+      let copied = false;
+      try { await navigator.clipboard.writeText(link); copied = true; }
+      catch { $('driveLink').select(); try { copied = document.execCommand('copy'); } catch {} }
+      $('copyLink').textContent = copied ? '✓ Copiado' : 'Selecione e copie';
+      $('copyLink').classList.toggle('done', copied);
+      setTimeout(() => { $('copyLink').textContent = 'Copiar link'; $('copyLink').classList.remove('done'); }, 2200);
+    });
+
+    // ---------- Novo vídeo ----------
+    $('reset').addEventListener('click', () => {
+      if (busy || saving) return;
+      source = null;
+      clearJob();
+      $('localFile').value = '';
+      $('driveUrl').value = '';
+      $('configuration').classList.add('hidden');
+      $('status').classList.add('hidden');
+      showScreen('editor');
+    });
+
+    window.addEventListener('beforeunload', (e) => { if (saving) { e.preventDefault(); e.returnValue = ''; } });
+  </script>
+</body>
+</html>
