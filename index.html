@@ -74,6 +74,13 @@
     .placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #2d4c72; border-radius:16px; background:#0a1525; display:grid; place-items:center; text-align:center; color:#8ea1bb; font-size:.85rem; line-height:1.5; padding:20px; }
     .placeholder strong { display:block; color:#d5e2f5; font-size:1rem; margin-bottom:6px; }
     .step { color:#78adf5; font-weight:700; }
+    .badge.saving { color:#9ac5ff; border-color:#31547f; background:#132743; }
+    .badge.fail { color:#ffb4b4; border-color:#5a2a2f; background:#2a1215; }
+    .spin { display:inline-block; width:10px; height:10px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    .progress-track.working .progress-bar { min-width:12%; background:repeating-linear-gradient(45deg,#2876e8 0 12px,#4d9bff 12px 24px); background-size:34px 34px; animation:stripes 1s linear infinite; }
+    @keyframes stripes { to { background-position:34px 0 } }
+    .caption { color:#8ea1bb; font-size:.76rem; line-height:1.5; margin:8px 2px 0; text-align:center; }
     @keyframes rise { from {opacity:0;transform:translateY(9px)} to {opacity:1;transform:translateY(0)} }
     @media(max-width:480px) { .panel{padding:23px 18px}.actions,.link-row{flex-direction:column;align-items:stretch}.durations{gap:7px}.duration{padding:14px 4px} }
   </style>
@@ -128,14 +135,14 @@
       <!-- ETAPA 2: preview, salvar no Drive, copiar link e download -->
       <div id="preview" class="hidden">
         <div class="intro" style="margin-bottom:22px">
-          <span class="badge">✓ Loop montado</span>
-          <h1>Seu looping está pronto</h1>
+          <span id="previewBadge" class="badge saving"><span class="spin"></span> Salvando no Drive</span>
+          <h1 id="previewTitle">Montando seu looping</h1>
           <p class="subtitle" id="previewSubtitle">Confira o resultado abaixo.</p>
         </div>
 
         <video id="previewVideo" class="player hidden" controls playsinline preload="metadata"></video>
-        <div id="previewPlaceholder" class="placeholder hidden"><div><strong>Salvando no Google Drive…</strong>O preview aparece aqui assim que o arquivo terminar de ser salvo.</div></div>
         <iframe id="previewFrame" class="drive-frame hidden" allow="autoplay" title="Preview no Google Drive"></iframe>
+        <p id="previewCaption" class="caption hidden"></p>
 
         <div class="file-meta">
           <div class="file-icon">▣</div>
@@ -688,12 +695,42 @@
     }
 
     // ---------- Preview ----------
+    function setHeader(state) {
+      const badge = $('previewBadge');
+      badge.className = 'badge' + (state === 'saving' ? ' saving' : state === 'fail' ? ' fail' : '');
+      badge.innerHTML = state === 'saving' ? '<span class="spin"></span> Salvando no Drive' : state === 'fail' ? '✕ Não foi salvo no Drive' : '✓ Pronto';
+      $('previewTitle').textContent = state === 'done' ? 'Seu looping está pronto' : state === 'fail' ? 'Seu looping foi montado' : 'Montando seu looping';
+    }
+
+    // Cronômetro: atualiza a cada segundo mesmo entre as respostas do Drive.
+    let timer = null, timerStart = 0, timerText = '', timerPct = 0;
+    const clock = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+    function startTimer() {
+      stopTimer();
+      timerStart = Date.now();
+      $('uploadTrack').classList.add('working');
+      timer = setInterval(renderTimer, 1000);
+    }
+    function stopTimer() { if (timer) clearInterval(timer); timer = null; $('uploadTrack').classList.remove('working'); }
+    function progress(text, pct) { timerText = text; timerPct = pct; renderTimer(); }
+    function renderTimer() {
+      setUpload(`${timerText} <span style="color:#71839d">· ${clock(Date.now() - timerStart)}</span>`, timerPct);
+      $('uploadTrack').classList.toggle('working', timerPct < 1);
+    }
+
     function openPreview() {
       const local = !!job.url;
       $('previewVideo').classList.toggle('hidden', !local);
-      $('previewPlaceholder').classList.toggle('hidden', local);
-      $('previewFrame').classList.add('hidden');
+      $('previewFrame').classList.toggle('hidden', local);
+      $('previewCaption').classList.toggle('hidden', local);
       if (local) $('previewVideo').src = job.url;
+      else {
+        // O arquivo final ainda não existe (e o Drive leva alguns minutos para processar vídeos novos).
+        // Mostramos o vídeo original, que já está processado: é exatamente o trecho que se repete.
+        $('previewFrame').src = `https://drive.google.com/file/d/${job.source.id}/preview`;
+        $('previewCaption').textContent = `Prévia da volta de ${job.plan.loopSec.toFixed(1)} s que se repete até ${String(job.minutes).padStart(2, '0')}:00 no arquivo final.`;
+      }
+      setHeader('saving');
 
       $('outName').textContent = job.name;
       $('outInfo').textContent = `${String(job.minutes).padStart(2, '0')}:00 · ${formatMB(job.plan.total)} · volta de ${job.plan.loopSec.toFixed(1)} s`;
@@ -706,7 +743,7 @@
       $('copyLink').classList.remove('done');
       $('openDrive').classList.add('hidden');
       $('retryUpload').classList.add('hidden');
-      $('previewSubtitle').textContent = local ? 'Confira o resultado abaixo. O arquivo está sendo salvo no Drive.' : 'O arquivo está sendo montado direto no Google Drive.';
+      $('previewSubtitle').textContent = local ? 'Você já pode conferir e baixar. Enquanto isso, o arquivo é salvo no Drive.' : 'O arquivo está sendo montado direto no Google Drive. Isso leva alguns minutos.';
       showScreen('preview');
     }
 
@@ -766,6 +803,8 @@
       $('retryUpload').classList.add('hidden');
       $('reset').disabled = true;
       let tempId = null;
+      startTimer();
+      progress('Preparando para salvar no Drive...', 0);
       try {
         const local = current.source.kind === 'local';
         let src = local ? null : { id: current.source.id, resourceKey: current.source.resourceKey };
@@ -773,7 +812,7 @@
         if (local) {
           // O original é enviado uma única vez; as repetições são feitas no próprio Drive.
           const up = await uploadBlob(current.source.file, `${TMP_PREFIX}${Date.now()}.mp4`, (done, total) =>
-            setUpload(`<span class="step">Etapa 1 de 2</span> · Enviando o vídeo original... ${Math.round(done / total * 100)}% (${formatMB(done)} de ${formatMB(total)})`, done / total * 100));
+            progress(`<span class="step">Etapa 1 de 2</span> · Enviando o vídeo original... ${Math.round(done / total * 100)}% (${formatMB(done)} de ${formatMB(total)})`, done / total * 100));
           tempId = up.id;
           src = { id: up.id, resourceKey: '' };
         }
@@ -781,7 +820,7 @@
         const prefix = local ? '<span class="step">Etapa 2 de 2</span> · ' : '';
         const plan = current.plan;
         const p = { H: plan.header.length, a: plan.a, P: plan.P, n: plan.n, Q: plan.Q, total: plan.total };
-        setUpload(`${prefix}Montando o arquivo no Drive... 0%`, 0);
+        progress(`${prefix}Montando o arquivo no Drive... 0%`, 0);
         const { uploadUrl } = await callScript({ action: 'start', name: current.name, size: plan.total });
         const headerB64 = await blobToBase64(new Blob([plan.header]));
         const t0 = Date.now();
@@ -804,16 +843,19 @@
           const pct = pos / p.total * 100;
           const speed = pos / Math.max(1, (Date.now() - t0) / 1000);
           const eta = speed > 0 ? Math.round((p.total - pos) / speed) : 0;
-          setUpload(`${prefix}Montando o arquivo no Drive... ${Math.round(pct)}% (${formatMB(pos)} de ${formatMB(p.total)}${eta ? ` · ~${eta < 60 ? eta + ' s' : Math.ceil(eta / 60) + ' min'} restantes` : ''})`, pct);
+          progress(`${prefix}Montando o arquivo no Drive... ${Math.round(pct)}% (${formatMB(pos)} de ${formatMB(p.total)}${eta ? ` · ~${eta < 60 ? eta + ' s' : Math.ceil(eta / 60) + ' min'} restantes` : ''})`, pct);
         }
 
         if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
+        stopTimer();
         if (current !== job) return;
-        showSaved(result);
+        showSaved(result, Date.now() - timerStart);
       } catch (error) {
         console.error(error);
+        stopTimer();
         if (tempId) callScript({ action: 'trash', id: tempId }).catch(() => {});
         if (current !== job) return;
+        setHeader('fail');
         setUpload(`Não foi possível salvar no Drive: ${error?.message || error}${current.url ? ' Você ainda pode baixar o MP4.' : ''}`, 0, 'error');
         $('retryUpload').classList.remove('hidden');
       } finally {
@@ -822,18 +864,17 @@
       }
     }
 
-    function showSaved(result) {
+    function showSaved(result, elapsed) {
+      setHeader('done');
       $('driveLink').value = result.link;
       $('copyLink').disabled = false;
       $('openDrive').href = result.link;
       $('openDrive').classList.remove('hidden');
       $('previewSubtitle').textContent = 'Arquivo salvo na pasta do Google Drive.';
-      setUpload('✓ Salvo no Google Drive com sucesso.', 100, 'ok');
+      setUpload(`✓ Salvo no Google Drive em ${clock(elapsed)}.`, 100, 'ok');
       if (!job.url) {
-        // Origem no Drive: preview e download pelo próprio Drive.
-        $('previewPlaceholder').classList.add('hidden');
-        $('previewFrame').src = `https://drive.google.com/file/d/${result.id}/preview`;
-        $('previewFrame').classList.remove('hidden');
+        // O Drive leva alguns minutos para liberar a reprodução de vídeos novos; o download já funciona.
+        $('previewCaption').textContent = `Prévia da volta de ${job.plan.loopSec.toFixed(1)} s que se repete no arquivo final. A reprodução do arquivo final no Drive é liberada em alguns minutos (o Drive processa vídeos novos); o download já funciona.`;
         const dl = $('downloadLink');
         dl.href = `https://drive.google.com/uc?export=download&id=${result.id}`;
         dl.target = '_blank';
